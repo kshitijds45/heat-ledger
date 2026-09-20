@@ -1,0 +1,229 @@
+/**
+ * Design tokens
+ *
+ * Principle: the interface chrome is monochrome. Colour is reserved entirely
+ * for data, so any colour on screen carries meaning rather than decoration.
+ * The four heat colours are carried over unchanged from the source deck.
+ *
+ * Type: Archivo for headings, a technical grotesque that suits meteorological
+ * and actuarial material. Inter for interface and body. Figures are set
+ * tabular throughout, because almost every number here sits in a column that
+ * has to line up.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --ink: #16202c;
+  --ink-soft: #3d4b5c;
+  --muted: #5a6876;
+  --paper: #ffffff;
+  --wash: #eef1f4;
+  --wash-deep: #e2e7ec;
+  --rule: #d3dae2;
+
+  /* Data only. Never used for chrome. */
+  --heat-cool: #4169e1;
+  --heat-mild: #ffa500;
+  --heat-warm: #ff4500;
+  --heat-hot: #8b0000;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: var(--wash);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.011em;
+  color: var(--ink);
+  margin: 0;
+}
+
+/* Numbers sit in columns almost everywhere in this product. */
+.tnum,
+table,
+input[type='number'] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.app-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--wash);
+}
+
+.topbar {
+  background: var(--ink);
+  color: #fff;
+}
+
+.topbar h1 {
+  color: #fff;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+}
+
+.seg {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg button {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.seg button:hover {
+  color: #fff;
+}
+
+.seg button[data-active='true'] {
+  background: #fff;
+  color: var(--ink);
+}
+
+.seg button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+}
+
+.panel-pad {
+  padding: 14px;
+}
+
+.rail {
+  background: var(--wash);
+  border-left: 1px solid var(--rule);
+}
+
+.metric-value {
+  font-family: 'Archivo', sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.hairline {
+  border-top: 1px solid var(--rule);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+/* Range inputs read as instrument controls rather than form widgets. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--wash-deep);
+  border-radius: 999px;
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid #fff;
+}
+
+input[type='number'],
+select {
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.scroll-rail {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.scroll-rail::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-rail::-webkit-scrollbar-thumb {
+  background: var(--wash-deep);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
