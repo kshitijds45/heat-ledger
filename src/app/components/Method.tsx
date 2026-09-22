@@ -1,9 +1,14 @@
 import React from 'react';
 import { TOOL_NAME, CREATOR } from '../branding';
+import { DEFAULTS } from '../services/RiskModel';
+import { HISTORY_START, historyEnd, BASELINE, FUTURE, CLIMATE_MODELS, POPULATION_YEAR } from '../services/ClimateData';
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const Section: React.FC<{ n: number; title: string; children: React.ReactNode }> = ({ n, title, children }) => (
   <section className="pt-6 mt-6" style={{ borderTop: '1px solid var(--rule)' }}>
-    <h3 className="text-sm mb-3">{title}</h3>
+    <h3 className="text-sm mb-3">
+      <span className="tnum mr-2" style={{ color: 'var(--muted)' }}>{n}.</span>
+      {title}
+    </h3>
     {children}
   </section>
 );
@@ -14,256 +19,264 @@ const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </p>
 );
 
-const Formula: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const F: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
-    className="text-xs tnum px-3 py-2 rounded-md my-2"
+    className="text-xs tnum px-3 py-2 rounded-md my-3 leading-relaxed"
     style={{ background: 'var(--wash)', border: '1px solid var(--rule)', maxWidth: '68ch' }}
   >
     {children}
   </div>
 );
 
+const pc = (v: number) => `${Math.round(v * 100)}%`;
+const YEARS = historyEnd() - HISTORY_START + 1;
+
 export const Method: React.FC = () => (
   <div className="scroll-rail h-full p-4 md:p-8">
     <div className="max-w-3xl mx-auto pb-16">
       <h2 className="text-lg">Method and fine print</h2>
-      <p className="text-xs mt-1 mb-2" style={{ color: 'var(--muted)' }}>
-        Every figure in {TOOL_NAME}, where it comes from and how it is calculated.
+      <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+        How {TOOL_NAME} prices heatwave and cold wave cover, where every number comes from and what it
+        cannot tell you.
       </p>
 
-      <Section title="What this is, and what it is not">
+      <Section n={1} title="The product">
         <P>
-          This is a working demonstration built on public data. The climate figures are real and
-          fetched live. The insurance figures are arithmetic applied to those real figures, using
-          loadings that are set in the interface rather than derived from a book of business.
+          Parametric cover pays a fixed sum when a temperature index crosses a defined line. There is no
+          claim, no inspection and no loss adjuster, because there is nothing to assess. The trigger
+          either fired or it did not.
         </P>
         <P>
-          It is not a quotation, an underwriting decision or financial advice. Nobody has
-          underwritten anything here. A real product would need licensed basis risk analysis, an
-          agreed settlement data source, regulatory approval and capital behind it.
+          This is what makes the product priceable from temperature data alone. A conventional policy
+          needs a model of damage: how much a given event costs a given property. Here the payout is
+          fixed by contract, so the only uncertainty is how often the trigger fires.
         </P>
       </Section>
 
-      <Section title="Data sources">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs tnum" style={{ minWidth: 520 }}>
+      <Section n={2} title="The triggers">
+        <P>Both defaults are official UK definitions rather than judgement.</P>
+        <P>
+          <strong>Heatwave.</strong> The Met Office definition: at least {DEFAULTS.heatDuration}{' '}
+          consecutive days with a maximum temperature at or above a threshold, which is{' '}
+          {DEFAULTS.heatThreshold}°C for Greater London. A qualifying run counts as one heatwave however
+          long it lasts, and a new run after a break is a new heatwave, which is also how the Met Office
+          counts them.
+        </P>
+        <P>
+          <strong>Cold wave.</strong> The Cold Weather Payment trigger: a mean temperature at or below{' '}
+          {DEFAULTS.coldThreshold}°C for {DEFAULTS.coldDuration} consecutive days. Each full{' '}
+          {DEFAULTS.coldDuration}-day block pays, so a fourteen day spell pays twice, matching the
+          government scheme. That scheme is itself effectively a parametric product.
+        </P>
+        <P>
+          Both can be changed under Assumptions. Every figure recalculates instantly from the stored
+          record, with no new data request.
+        </P>
+      </Section>
+
+      <Section n={3} title="The data">
+        <div className="overflow-x-auto mb-3">
+          <table className="w-full text-xs" style={{ minWidth: 520 }}>
             <thead>
               <tr style={{ color: 'var(--muted)' }}>
-                <th className="text-left font-medium pb-2">API</th>
-                <th className="text-left font-medium pb-2">Dataset</th>
-                <th className="text-left font-medium pb-2">Resolution</th>
+                <th className="text-left font-medium pb-2">Source</th>
+                <th className="text-left font-medium pb-2">What</th>
                 <th className="text-left font-medium pb-2">Used for</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ['Forecast', 'Best available national model', '1 to 11 km, hourly', 'Live conditions, planner view'],
-                ['Historical Weather', 'ECMWF IFS, ERA5, ERA5-Land', '9 to 25 km, hourly, from 1940', 'Trigger backtest, portfolio exposure'],
-                ['Climate', 'CMIP6 HighResMIP, bias corrected', 'Downscaled to 10 km, daily, to 2050', 'Repricing the trigger forward'],
-                ['Geocoding', 'Nominatim, OpenStreetMap', 'n/a', 'Place search'],
-                ['Basemap', 'OpenStreetMap tiles', 'n/a', 'Map rendering'],
-              ].map(row => (
-                <tr key={row[0]} className="border-t" style={{ borderColor: 'var(--rule)' }}>
-                  {row.map((cell, i) => (
-                    <td key={i} className="py-2 pr-3" style={{ color: i === 0 ? 'var(--ink)' : 'var(--ink-soft)' }}>
-                      {cell}
-                    </td>
-                  ))}
+                ['Open-Meteo Historical Weather API', `Daily maximum and mean temperature, ${HISTORY_START} to ${historyEnd()}. ECMWF reanalysis, 9 to 25 km.`, 'Event history, trend and pricing'],
+                ['Open-Meteo Climate API', `CMIP6 HighResMIP daily temperature to ${FUTURE.end}, ${CLIMATE_MODELS.length} models, 10 km.`, 'The 2031 to 2050 premium'],
+                ['WorldPop', `Population inside the chosen area, ${POPULATION_YEAR} estimate, 100 m grid.`, 'Policies in force'],
+                ['OpenStreetMap', 'Map tiles and place search.', 'Choosing an area'],
+              ].map(r => (
+                <tr key={r[0]} className="border-t align-top" style={{ borderColor: 'var(--rule)' }}>
+                  <td className="py-2 pr-3" style={{ color: 'var(--ink)' }}>{r[0]}</td>
+                  <td className="py-2 pr-3" style={{ color: 'var(--ink-soft)' }}>{r[1]}</td>
+                  <td className="py-2" style={{ color: 'var(--ink-soft)' }}>{r[2]}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
-          Open-Meteo requires no API key and permits anonymous browser requests, which is what
-          allows this to run as a static site with no server. Every request URL is written to the
-          browser console, so any number here can be checked against the raw source.
-        </p>
-      </Section>
-
-      <Section title="Variables, and why each one is here">
         <P>
-          A temperature-only map can tell you where it is hot but not what to do about it. Each
-          variable below was added because it changes a recommendation rather than decorating it.
-        </P>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs" style={{ minWidth: 520 }}>
-            <tbody>
-              {[
-                ['soil_temperature_0cm', 'Ground surface temperature. Sets severity. Note that Open-Meteo documents this as water surface temperature over water, so it changes meaning across a coastline.'],
-                ['apparent_temperature', 'Perceived temperature combining humidity, wind and solar radiation. This is what heat does to people, as opposed to what it does to surfaces.'],
-                ['soil_moisture_0_to_1cm', 'Whether planting can establish without permanent irrigation. Also acts as the land mask, since it is a land-only field.'],
-                ['shortwave_radiation', 'Incoming solar load. Determines whether reflective surfaces and shading will repay their cost.'],
-                ['wind_speed_10m', 'Ventilation. Stagnant air is what turns a hot street into a heat trap.'],
-                ['temperature_2m_max', 'The contractual trigger. Air temperature, not surface or apparent, because a parametric contract needs an objective measure both parties can verify.'],
-              ].map(([name, why]) => (
-                <tr key={name} className="border-t" style={{ borderColor: 'var(--rule)' }}>
-                  <td className="py-2 pr-4 align-top whitespace-nowrap tnum" style={{ color: 'var(--ink)' }}>
-                    {name}
-                  </td>
-                  <td className="py-2 align-top" style={{ color: 'var(--ink-soft)' }}>
-                    {why}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      <Section title="How a recommendation is chosen">
-        <P>
-          Severity and response are decided separately. Severity comes from surface temperature
-          and sets the colour. The response comes from the feasibility variables and sets the
-          icon, so two equally hot cells can need different work. Rules are evaluated in order and
-          the first match wins.
-        </P>
-        <ol className="text-sm space-y-2 mb-3" style={{ color: 'var(--ink-soft)', maxWidth: '68ch' }}>
-          <li>
-            <strong>Feels like 38°C or above</strong> gives health and alerts. Perceived heat
-            stress this high needs a response today, whatever the long-run fix is.
-          </li>
-          <li>
-            <strong>Solar load above 250 W/m² with soil moisture under 0.15 m³/m³</strong> gives
-            built environment. Strong sun on dry ground, where planting would need permanent
-            irrigation, so reflect the heat instead.
-          </li>
-          <li>
-            <strong>Solar load above 250 W/m² with soil moisture at or above 0.15</strong> gives
-            nature-based. Same sun, but ground that can actually support canopy.
-          </li>
-          <li>
-            <strong>Wind under 8 km/h</strong> gives social and mobility. Heat is not arriving
-            from above, it is failing to leave, so the answer is moving air and moving people.
-          </li>
-          <li>
-            <strong>Otherwise</strong> health and alerts, as monitoring. Ventilated and not under
-            strong sun means no structural intervention is indicated right now.
-          </li>
-        </ol>
-        <p className="text-xs" style={{ color: 'var(--muted)', maxWidth: '68ch' }}>
-          The thresholds are defensible starting points rather than published standards. The
-          0.15 m³/m³ soil moisture figure marks roughly where the top layer is too dry for new
-          planting to establish unaided. Open-Meteo separately documents vapour pressure deficit
-          above 1.6 kPa as the point where plant transpiration rises sharply, which is a useful
-          cross-check on the same judgement.
-        </p>
-      </Section>
-
-      <Section title="The parametric contract">
-        <P>
-          The trigger is a daily maximum air temperature at or above a chosen threshold. Each
-          triggered day pays a fixed amount, up to a cap per year. There is no claim, no
-          inspection and no loss adjustment, because there is nothing to assess. The index either
-          crossed the line or it did not.
-        </P>
-        <Formula>
-          triggered days in year Y = count of days where temperature_2m_max ≥ threshold
-          <br />
-          paid days in year Y = min(triggered days, annual cap)
-        </Formula>
-        <P>
-          The backtest runs over the last 20 complete calendar years of reanalysis, ending at the last full year, because the archive lags real time by several
-          days.
+          The record starts in {HISTORY_START} to match the 1991 to 2020 climate normal the Met Office now
+          uses for its thresholds, and ends at the last complete year because the archive lags real time
+          by several days. Temperature is read at one index point, the centre of the chosen area. Every
+          request is logged to the browser console, so any number can be checked against its source.
         </P>
       </Section>
 
-      <Section title="The pricing build-up">
+      <Section n={4} title="Adjusting for a warming climate">
         <P>
-          A standard actuarial build-up. The pure premium is what the contract is expected to pay.
-          The risk load exists because a mean says nothing about how bad a single year gets. The
-          expense load covers acquisition, administration and capital.
+          A plain average over {YEARS} years underprices heat and overprices cold, because the early years
+          were cooler than today. Removing a linear trend before pricing is the standard correction for
+          weather contracts.
         </P>
-        <Formula>
-          pure premium = mean(paid days) × payout per day
+        <F>
+          For each year, take the mean summer maximum (June to August) for heat, or the mean winter
+          temperature (December to February) for cold.
           <br />
-          risk load = standard deviation(paid days) × multiple × payout per day
+          Fit a straight line through those yearly means.
           <br />
-          gross premium = (pure premium + risk load) ÷ (1 − expense ratio)
-        </Formula>
+          Shift every day in each year by the gap between that year’s point on the line and the final
+          year’s.
+          <br />
+          Count events again on the shifted record.
+        </F>
         <P>
-          Expenses divide rather than multiply because they are expressed as a share of gross
-          premium, which is the convention rate filings use. Marking up instead would understate
-          them.
-        </P>
-        <Formula>
-          maximum liability = annual cap × payout per day
-          <br />
-          rate on line = gross premium ÷ maximum liability × 1,000
-          <br />
-          target loss ratio = pure premium ÷ gross premium
-        </Formula>
-        <P>
-          The loadings are exposed as inputs rather than buried in the code, because they are
-          judgement and should be visible as such. Change them and every figure moves.
+          Summer and winter are treated separately because they do not warm at the same rate. The result
+          is {YEARS} years of weather, each as it would have played out in today’s climate. The chart
+          shows the record as it happened. The table prices off the adjusted version, and the note under
+          the chart gives both averages.
         </P>
       </Section>
 
-      <Section title="Repricing to 2050">
+      <Section n={5} title="From events to a probability">
         <P>
-          Climate models carry bias against observed weather, so projected day counts are not used
-          directly. Instead the ratio between projected and baseline trigger frequency is applied
-          to the observed historical mean. Systematic model bias largely cancels in that ratio and
-          only the change signal carries through.
+          {YEARS} years cannot show a 1-in-200 year directly. So a count distribution is fitted to the
+          adjusted events per year, and the tail is read from the distribution rather than the record.
         </P>
-        <Formula>
-          scale = projected trigger days (2031-2050) ÷ modelled baseline days (2000-2019)
-          <br />
-          repriced mean = min(observed mean × scale, annual cap)
-        </Formula>
         <P>
-          Two CMIP6 HighResMIP models are averaged. These high resolution runs sit close to RCP8.5,
-          a high emissions pathway, so the projection should be read as an upper case rather than a
-          central estimate. Scenario differences are in any case modest before 2050.
+          Where the year to year spread roughly equals the average, a Poisson distribution is used. Where
+          it is noticeably larger, a negative binomial is used instead. That is common for heat, because
+          the conditions that produce one heatwave tend to produce several in the same summer. The
+          negative binomial gives that clumping a heavier tail, which is the honest answer for a peril
+          that arrives in bunches.
+        </P>
+        <P>
+          Payouts stop at the annual limit, {DEFAULTS.annualLimit} events per peril by default. Any worse
+          year pays at the limit, which caps the worst case per policy.
         </P>
       </Section>
 
-      <Section title="Known limitations">
+      <Section n={6} title="The price">
+        <P>
+          The premium is set so the combined ratio lands on the target. The combined ratio is claims plus
+          expenses as a share of premium, and anything below 100% is underwriting profit.
+        </P>
+        <F>
+          combined ratio = loss ratio + expense ratio
+          <br />
+          {pc(DEFAULTS.targetCombinedRatio)} = {pc(DEFAULTS.targetCombinedRatio - DEFAULTS.expenseRatio)} + {pc(DEFAULTS.expenseRatio)}
+          <br />
+          <br />
+          premium = expected payout ÷ loss ratio
+          <br />
+          expenses = premium × expense ratio
+          <br />
+          margin = premium × (1 − combined ratio)
+        </F>
+        <P>
+          Expected payout is the average number of paid events a year, from the fitted distribution,
+          multiplied by the payout per event. Changing the payout scales every money figure and leaves
+          every ratio unchanged.
+        </P>
+      </Section>
+
+      <Section n={7} title="The capital check">
+        <P>
+          Pricing to a fixed combined ratio gives every location the same{' '}
+          {pc(1 - DEFAULTS.targetCombinedRatio)} margin, however lumpy its risk. A peril that pays a
+          little most years and one that pays nothing for decades then a lot should not earn the same
+          margin. The capital check shows which is which.
+        </P>
+        <F>
+          1-in-200 year payout = payout at the 99.5th percentile of the fitted distribution
+          <br />
+          capital needed = 1-in-200 year payout − expected payout
+          <br />
+          return on capital = margin ÷ capital needed
+        </F>
+        <P>
+          The 99.5% level is the Solvency II and Solvency UK standard: enough capital to survive all but
+          one year in two hundred. A low return on capital means the margin does not pay for the capital
+          the risk ties up, which is the signal to raise the price, lower the limit or decline to write
+          the cover.
+        </P>
+        <P>
+          Writing heat and cold in the same book lowers the combined 1-in-200 payout below the sum of the
+          two, because a severe summer and a severe winter are treated as independent. That
+          diversification shows in the Both column.
+        </P>
+      </Section>
+
+      <Section n={8} title="The portfolio">
+        <F>
+          policies in force = population × adoption rate
+          <br />
+          premium income = policies × annual premium
+          <br />
+          1-in-200 year payout = policies × 1-in-200 year payout per policy
+        </F>
+        <P>
+          The last line is a straight multiplication, and that is the most important fact about this
+          product. Every policy in the area pays on the same reading, so they all trigger together. There
+          is no diversification inside an area: a million policies are one risk a million times over.
+          Diversification only comes from writing in places whose weather does not move together.
+        </P>
+      </Section>
+
+      <Section n={9} title="The 2031 to 2050 premium">
+        <P>
+          Climate models run warm or cold against observed weather, so their event counts are not used
+          directly. Each model is compared with itself instead: its event rate over {FUTURE.start} to{' '}
+          {FUTURE.end} against its own rate over {BASELINE.start} to {BASELINE.end}. That ratio is averaged
+          across the models and applied to the adjusted historical frequency. Most of each model’s bias
+          cancels in the ratio, leaving only the change.
+        </P>
+        <P>
+          These runs follow a high emissions pathway, so the figure is nearer an upper case than a central
+          estimate. It is not needed to price a one-year contract. It tells an insurer whether the product
+          stays viable, which matters before launching anything.
+        </P>
+      </Section>
+
+      <Section n={10} title="What this cannot tell you">
         <ul className="text-sm space-y-2" style={{ color: 'var(--ink-soft)', maxWidth: '68ch' }}>
           <li>
-            <strong>Basis risk.</strong> A grid cell is not a person. Someone can suffer badly on a
-            day the index misses, and be paid on a day they were indoors. This is the central
-            weakness of every parametric product and it is not solved here.
+            <strong>Basis risk.</strong> The index is one grid point. A policyholder can suffer on a day the
+            index misses, or be paid on a day they were fine. Every parametric product carries this, and it
+            is the main thing a buyer needs to understand.
           </li>
           <li>
-            <strong>Resolution mismatch.</strong> Live conditions resolve to a few kilometres,
-            reanalysis to 9 to 25 km. Portfolio exposure is therefore regional. A finer grid would
-            look more precise while returning the same cell repeatedly.
+            <strong>No settlement source.</strong> A real contract names a specific station or dataset as
+            binding, with fallbacks. Reanalysis is right for analysis and wrong for a contract.
           </li>
           <li>
-            <strong>Reanalysis is modelled, not measured.</strong> It assimilates observations but
-            fills gaps by model. It is the standard basis for climate risk work and it is still not
-            a thermometer at the site.
+            <strong>Reanalysis is modelled.</strong> It blends observations with a weather model and runs
+            smoother than a thermometer, so extremes at a single station can be sharper than it shows.
           </li>
           <li>
-            <strong>No settlement source.</strong> A real contract would name a specific station or
-            dataset as the binding index, with agreed fallbacks. This demo uses whichever model
-            Open-Meteo judges best for the location, which is fine for analysis and unacceptable in
-            a contract.
+            <strong>One point for the whole area.</strong> A large area has real temperature variation that
+            a single index point ignores.
           </li>
           <li>
-            <strong>No exposure data.</strong> The portfolio view assumes an even spread of
-            policies across cells. Real books are not evenly spread, and concentration is the whole
-            question.
+            <strong>Population is from {POPULATION_YEAR}.</strong> It is the latest year WorldPop publishes,
+            and adoption is an assumption rather than a forecast.
           </li>
           <li>
-            <strong>Urban heat island effect is under-resolved.</strong> The sharpest heat contrasts
-            in a city happen over tens of metres, below what any of these models see.
+            <strong>Thin history for rare perils.</strong> Where a trigger fired only a handful of times,
+            the fitted distribution rests on very little and the price is uncertain. Cold cover in a mild
+            city is the obvious example.
+          </li>
+          <li>
+            <strong>Not a quotation.</strong> Nobody has underwritten anything here.
           </li>
         </ul>
       </Section>
 
-      <Section title="Attribution and licence">
+      <Section n={11} title="Attribution">
         <P>
-          Weather and climate data from Open-Meteo, used under its non-commercial terms. Historical
-          data generated using Copernicus Climate Change Service information, ERA5 and ERA5-Land,
-          via ECMWF. Climate projections from the CMIP6 HighResMIP programme, licensed CC BY 4.0.
-          Basemap and place search from OpenStreetMap contributors, licensed under the Open
-          Database License.
+          Weather and climate data from Open-Meteo, used under its non-commercial terms. Historical data
+          generated using Copernicus Climate Change Service information via ECMWF. Climate projections
+          from CMIP6 HighResMIP, CC BY 4.0. Population from WorldPop, University of Southampton. Maps and
+          place search from OpenStreetMap contributors, ODbL.
         </P>
         <p className="text-xs mt-4 pt-4" style={{ color: 'var(--muted)', borderTop: '1px solid var(--rule)' }}>
-          {TOOL_NAME} was designed and built by {CREATOR}. The concept began as a business school
-          submission on urban heat resilience and was extended into a working risk pricing tool.
+          {TOOL_NAME} was designed and built by {CREATOR}. It began as a business school submission on
+          urban heat resilience and was extended into a working pricing model.
         </p>
       </Section>
     </div>

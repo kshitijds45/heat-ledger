@@ -4,8 +4,51 @@ import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
+export interface SearchBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
 interface LocationSearchProps {
-  onLocationSelect: (lat: number, lon: number, displayName: string) => void;
+  onLocationSelect: (
+    lat: number,
+    lon: number,
+    displayName: string,
+    bounds: SearchBounds
+  ) => void;
+}
+
+// Default box around a point when the place has no usable extent,
+// roughly 30 km across at mid latitudes.
+const DEFAULT_HALF_LAT = 0.14;
+const DEFAULT_HALF_LON = 0.22;
+
+// Cap on a searched extent, so a search for a whole country does not
+// price the entire country off one index point.
+const MAX_SPAN_DEG = 0.8;
+
+function boxAround(lat: number, lon: number): SearchBounds {
+  return {
+    north: lat + DEFAULT_HALF_LAT,
+    south: lat - DEFAULT_HALF_LAT,
+    east: lon + DEFAULT_HALF_LON,
+    west: lon - DEFAULT_HALF_LON,
+  };
+}
+
+function boundsFromResult(result: any, lat: number, lon: number): SearchBounds {
+  const bb = result?.boundingbox;
+  if (Array.isArray(bb) && bb.length === 4) {
+    const [s, n, w, e] = bb.map(Number);
+    if ([s, n, w, e].every(isFinite) && n > s && e > w) {
+      if (n - s <= MAX_SPAN_DEG && e - w <= MAX_SPAN_DEG && n - s > 0.02 && e - w > 0.02) {
+        return { north: n, south: s, east: e, west: w };
+      }
+    }
+  }
+  return boxAround(lat, lon);
 }
 
 export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect }) => {
@@ -24,7 +67,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
       const lat = parseFloat(coordMatch[1]);
       const lon = parseFloat(coordMatch[2]);
       if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-        onLocationSelect(lat, lon, `Coordinates: ${lat}, ${lon}`);
+        onLocationSelect(lat, lon, `${lat.toFixed(3)}, ${lon.toFixed(3)}`, boxAround(lat, lon));
         setShowResults(false);
         setSearchQuery('');
         return;
@@ -83,7 +126,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
   const handleSelectResult = (result: any) => {
     const lat = parseFloat(result.lat);
     const lon = parseFloat(result.lon);
-    onLocationSelect(lat, lon, result.display_name);
+    onLocationSelect(lat, lon, result.display_name, boundsFromResult(result, lat, lon));
     setShowResults(false);
     setSearchQuery('');
     setSearchResults([]);
@@ -96,7 +139,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder="Search city, country, or coordinates (lat, lon)..."
+            placeholder="Search a city, or enter lat, lon"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}

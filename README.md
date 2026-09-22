@@ -1,129 +1,90 @@
 # Heat Ledger
 
-Urban heat, priced. A browser-based tool that turns free, live climate data into cooling
-interventions that are actually feasible at a given site, and into a parametric heat insurance
-contract backtested against twenty years of reanalysis.
+Heatwave and cold wave insurance, priced from open climate data.
 
 **Live site:** https://kshitijds45.github.io/heat-ledger/
 
-No API keys. No backend. No database. Every figure on screen is fetched live from a public API,
-and every request URL is written to the browser console so it can be checked against the source.
+Pick any area and Heat Ledger prices parametric cover against both perils: how often each
+trigger fires in today's climate, the premium that hits a target combined ratio, the 1-in-200
+year payout and what a book of policies across the area would earn and lose. No API keys, no
+backend. Every figure comes from a public source, and every request is logged to the browser
+console so it can be checked.
 
 ---
 
-## Why it exists
+## The product
 
-Cities run several degrees hotter than the countryside around them, and the gap is widening. The
-usual response is a heat map. A heat map tells you where it is hot, which is the easy half of the
-problem and the half that does not change any decision.
+Parametric cover pays a fixed sum when a temperature index crosses a defined line. There is no
+claim and no loss adjuster. Because the payout is fixed by contract, there is no damage to model:
+the only uncertainty is how often the trigger fires, which can be answered from weather data alone.
 
-Heat Ledger does two things a heat map does not.
+Both default triggers are official UK definitions:
 
-**It checks whether a recommendation is deliverable.** Recommending urban tree planting on ground
-too dry to support it is worse than recommending nothing, because it consumes a budget and fails
-in year three. So severity and response are decided separately: surface temperature sets urgency,
-while soil moisture, solar load and wind decide what can actually be built there. Two equally hot
-cells can need different work, and the tool says which and why.
+| Peril | Trigger | Source |
+| --- | --- | --- |
+| Heatwave | 3+ consecutive days with maximum at or above 28°C | Met Office heatwave definition, Greater London |
+| Cold wave | Each 7 consecutive days with mean at or below 0°C | Cold Weather Payment trigger |
 
-**It turns the heat into a price.** Heat costs money long before it damages a building. Outdoor and
-informal workers lose a day's earnings every time it becomes unsafe to work, and no conventional
-policy covers that. A parametric contract pays a fixed sum when a defined temperature threshold is
-crossed, with no claim, no inspection and no loss adjustment. The tool counts how often that
-trigger would have fired at a location over the past two decades, builds a premium from the
-observed frequency and volatility, then reprices it against CMIP6 projections to 2050.
+## The pricing chain
 
----
+1. **Event history.** Daily temperature at the area's centre, 1991 to the last complete year.
+2. **Trend adjustment.** A linear trend in summer (for heat) and winter (for cold) temperature is
+   removed, so every past year is priced as if it happened in today's climate. A plain average
+   underprices heat and overprices cold.
+3. **Fitted frequency.** A Poisson or, where hot summers bring clusters of heatwaves, a negative
+   binomial distribution is fitted to events per year. 35 years cannot show a 1-in-200 year
+   directly, so the tail is read from the distribution.
+4. **Price.** The premium is set so the combined ratio hits the target:
 
-## What it does
+   ```
+   combined ratio = loss ratio + expense ratio   (85% = 55% + 30% by default)
+   premium        = expected payout ÷ loss ratio
+   ```
 
-| View | What it answers |
+5. **Capital check.** The 1-in-200 year payout (the Solvency II and Solvency UK 99.5% standard)
+   and the return the margin earns on the capital that tail requires. Pricing to a fixed combined
+   ratio gives every location the same margin however lumpy its risk. Return on capital shows
+   where that margin is not enough.
+6. **Portfolio.** Population (WorldPop) × adoption rate = policies in force. Every policy pays on
+   the same reading, so the book's 1-in-200 payout is a straight multiplication. There is no
+   diversification inside an area.
+7. **2031 to 2050.** Each CMIP6 model's future event rate is compared with its own baseline, and
+   that ratio is applied to the adjusted history, so model bias cancels.
+
+All assumptions (triggers, payout, annual limit, combined ratio, expense ratio, adoption) can be
+changed in the app, and every figure recalculates instantly.
+
+## Data
+
+| Source | Used for |
 | --- | --- |
-| **Planner** | Which cooling intervention is feasible at each point, and what constrains it |
-| **Parametric** | What a heat trigger costs to insure at this location, and what it will cost in 2050 |
-| **Portfolio** | Where exceedance concentrates across a region, and what a book of policies would lose |
-| **Data** | The same results as headline metrics and tables, without touching the map |
-| **Method** | Every source, threshold, formula and limitation, written out |
-
----
-
-## Data sources
-
-| API | Dataset | Resolution | Used for |
-| --- | --- | --- | --- |
-| [Open-Meteo Forecast](https://open-meteo.com/en/docs) | Best available national model | 1–11 km, hourly | Live conditions |
-| [Open-Meteo Historical](https://open-meteo.com/en/docs/historical-weather-api) | ECMWF IFS, ERA5, ERA5-Land | 9–25 km, from 1940 | Trigger backtest, portfolio exposure |
-| [Open-Meteo Climate](https://open-meteo.com/en/docs/climate-api) | CMIP6 HighResMIP, bias corrected | 10 km, daily, to 2050 | Repricing forward |
-| [Nominatim](https://nominatim.org/) | OpenStreetMap | — | Place search |
-
----
-
-## Pricing model
-
-A standard actuarial build-up, with every loading exposed as an input rather than buried in code.
-
-```
-pure premium  = mean(paid days per year) × payout per day
-risk load     = stdev(paid days per year) × multiple × payout per day
-gross premium = (pure premium + risk load) ÷ (1 − expense ratio)
-
-rate on line      = gross premium ÷ maximum liability × 1,000
-target loss ratio = pure premium ÷ gross premium
-```
-
-Expenses divide rather than multiply because they are a share of gross premium, which is the
-convention rate filings use. Marking up instead would understate them.
-
-For the 2050 reprice, projected day counts are not used directly. The **ratio** between projected
-and modelled-baseline frequency is applied to the observed historical mean, so systematic model
-bias largely cancels and only the change signal carries through.
-
----
+| [Open-Meteo Historical Weather API](https://open-meteo.com/en/docs/historical-weather-api) | Daily temperature from 1991, ECMWF reanalysis |
+| [Open-Meteo Climate API](https://open-meteo.com/en/docs/climate-api) | CMIP6 HighResMIP projections to 2050 |
+| [WorldPop](https://www.worldpop.org/) | Population inside the chosen area, 2020 |
+| [OpenStreetMap](https://www.openstreetmap.org/) | Map tiles and place search |
 
 ## Limitations
 
-Stated plainly, because a tool that hides these is not worth trusting.
+- **Basis risk.** The index is one grid point. A policyholder can suffer on a day it misses.
+- **No settlement source.** A real contract names a binding weather station. This uses reanalysis.
+- **Reanalysis is modelled**, and runs smoother than a single thermometer.
+- **Thin history for rare perils.** Cold cover in a mild city rests on very few events.
+- **Population is from 2020**, the latest WorldPop year. Adoption is an assumption.
+- **Not a quotation.** Nobody has underwritten anything here.
 
-- **Basis risk.** A grid cell is not a person. Someone can suffer on a day the index misses. This
-  is the central weakness of every parametric product and it is not solved here.
-- **No settlement source.** A real contract names a binding station or dataset with agreed
-  fallbacks. This uses whichever model Open-Meteo judges best, which is fine for analysis and
-  unacceptable in a contract.
-- **Reanalysis is modelled, not measured.** It assimilates observations but fills gaps by model.
-- **Resolution.** The sharpest heat contrasts in a city happen over tens of metres, below what any
-  of these models resolve. Portfolio exposure is regional, not street-level.
-- **Not a quotation.** Nobody has underwritten anything here. This is a demonstration.
+## Running and deploying
 
----
+Pushing to `main` builds and publishes the site automatically through
+`.github/workflows/deploy.yml`. To run locally: `npm install`, then `npm run dev`.
 
-## Running locally
-
-```bash
-npm install
-npm run dev
-```
-
-Then open the URL it prints. `npm run build` produces the static site in `dist/`.
-
-Deployment is automatic: pushing to `main` triggers the workflow in
-`.github/workflows/deploy.yml`, which builds and publishes to GitHub Pages.
-
----
-
-## Stack
-
-React 18, TypeScript, Vite, Tailwind, Leaflet, Recharts. Built as a static bundle so it runs
-anywhere that serves files.
-
----
+React, TypeScript, Vite, Tailwind, Leaflet and Recharts.
 
 ## Attribution
 
-Weather and climate data from [Open-Meteo](https://open-meteo.com/) under its non-commercial terms.
-Historical data generated using Copernicus Climate Change Service information (ERA5, ERA5-Land) via
-ECMWF. Climate projections from the CMIP6 HighResMIP programme, CC BY 4.0. Basemap and geocoding
-from OpenStreetMap contributors, ODbL.
+Weather and climate data from Open-Meteo under its non-commercial terms. Historical data generated
+using Copernicus Climate Change Service information via ECMWF. Projections from CMIP6 HighResMIP,
+CC BY 4.0. Population from WorldPop, University of Southampton. Maps from OpenStreetMap
+contributors, ODbL.
 
-The concept began as a business school submission on urban heat resilience and was extended into a
-working risk pricing tool.
-
-Built by **Kshitij Divansh Saxena**.
+Built by **Kshitij Divansh Saxena**. The concept began as a business school submission on urban
+heat resilience and was extended into a working pricing model.
