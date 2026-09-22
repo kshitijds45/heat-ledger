@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Loader2, RotateCcw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import {
   Assumptions,
+  effectiveExpenseRatio,
   LocationResult,
   ProjectionResult,
   Price,
@@ -11,6 +12,8 @@ import {
   pct,
 } from '../services/RiskModel';
 import { POPULATION_YEAR } from '../services/ClimateData';
+
+export type Peril = 'heat' | 'cold' | 'both';
 
 interface ResultsPanelProps {
   locationName: string;
@@ -27,6 +30,9 @@ interface ResultsPanelProps {
   onAssumptionsChange: (a: Assumptions) => void;
   onReset: () => void;
   isDefault: boolean;
+  policies: number | null;
+  peril: Peril;
+  onPerilChange: (p: Peril) => void;
   population: number | null;
   populationLoading: boolean;
   populationError: string | null;
@@ -50,9 +56,7 @@ const Field: React.FC<{
   prefix?: string;
 }> = ({ label, value, onChange, step = 1, min, max, suffix, prefix }) => (
   <label className="block">
-    <span className="text-xs block mb-1" style={{ color: 'var(--muted)' }}>
-      {label}
-    </span>
+    <span className="text-xs block mb-1" style={{ color: 'var(--muted)' }}>{label}</span>
     <div className="flex items-center gap-1">
       {prefix && <span className="text-xs" style={{ color: 'var(--muted)' }}>{prefix}</span>}
       <input
@@ -121,33 +125,59 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
     onAssumptionsChange,
     onReset,
     isDefault,
+    policies,
+    peril,
+    onPerilChange,
     population,
     populationLoading,
     populationError,
     onManualPopulation,
   } = props;
 
-  const [open, setOpen] = useState(false);
+  // Open by default: the assumptions are the product, not a hidden setting.
+  const [open, setOpen] = useState(true);
   const [manualPop, setManualPop] = useState('');
   const set = (patch: Partial<Assumptions>) => onAssumptionsChange({ ...a, ...patch });
 
-  const lossRatio = a.targetCombinedRatio - a.expenseRatio;
-  const invalid = lossRatio <= 0;
+  const invalid = a.targetCombinedRatio - a.expenseRatio <= 0;
+  const book = policies ?? a.referencePolicies;
+  const discountOn = a.volumeDiscountPerDoubling > 0;
 
-  const cell = (p: Price, pick: (p: Price) => string) =>
-    !p.priceable ? '-' : pick(p);
+  const showHeat = peril !== 'cold';
+  const showCold = peril !== 'heat';
+  const showBoth = peril === 'both';
+
+  const selected: Price | null = result
+    ? peril === 'heat'
+      ? result.heat.price
+      : peril === 'cold'
+        ? result.cold.price
+        : result.combined
+    : null;
+
+  const projectedSelected =
+    projection === null
+      ? null
+      : peril === 'heat'
+        ? projection.heatPremium
+        : peril === 'cold'
+          ? projection.coldPremium
+          : projection.combinedPremium;
 
   const rows: Array<{ label: string; pick: (p: Price) => string; strong?: boolean }> = [
     { label: 'Events a year, today’s climate', pick: p => p.eventsPerYear.toFixed(2) },
     { label: 'Expected payout', pick: p => gbp(p.expectedPayout) },
-    { label: `Expenses, ${pct(a.expenseRatio)}`, pick: p => gbp(p.expenses) },
+    { label: 'Expenses', pick: p => gbp(p.expenses) },
     { label: `Margin, ${pct(1 - a.targetCombinedRatio)}`, pick: p => gbp(p.margin) },
     { label: 'Annual premium', pick: p => gbp(p.premium), strong: true },
+    { label: 'Loss ratio', pick: p => pct(p.lossRatio) },
+    { label: 'Expense ratio', pick: p => pct(p.expenseRatio) },
     { label: '1-in-200 year payout', pick: p => gbp(p.tailPayout, 0) },
     { label: 'Return on capital', pick: p => pct(p.returnOnCapital) },
   ];
 
-  const policies = population !== null ? Math.round(population * a.adoption) : null;
+  const cell = (p: Price, pick: (p: Price) => string) => (p.priceable ? pick(p) : '-');
+
 
   const chartData = result
     ? Array.from(result.heat.observed.keys()).map(y => ({
@@ -158,6 +188,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
     : [];
 
   const separateTail = result ? result.heat.price.tailPayout + result.cold.price.tailPayout : 0;
+  const capitalSaved = result ? separateTail - result.combined.tailPayout : 0;
 
   return (
     <div className="space-y-3">
@@ -165,12 +196,38 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
       <div className="px-1">
         <h2 className="text-base leading-tight">{locationName}</h2>
         <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-          Index point {indexPoint.lat.toFixed(3)}, {indexPoint.lon.toFixed(3)} · {startYear} to{' '}
-          {endYear} record
+          Index point {indexPoint.lat.toFixed(3)}, {indexPoint.lon.toFixed(3)} · {startYear} to {endYear} record
         </p>
       </div>
 
-      {/* Assumptions drawer */}
+      {/* Cover selector */}
+      <div className="panel panel-pad">
+        <p className="text-xs mb-2" style={{ color: 'var(--muted)' }}>Cover written</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {([
+            ['heat', 'Heat only'],
+            ['cold', 'Cold only'],
+            ['both', 'Both'],
+          ] as Array<[Peril, string]>).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => onPerilChange(key)}
+              aria-pressed={peril === key}
+              className="text-xs font-medium py-1.5 rounded-md"
+              style={{
+                background: peril === key ? 'var(--ink)' : 'var(--paper)',
+                color: peril === key ? '#fff' : 'var(--ink)',
+                border: `1px solid ${peril === key ? 'var(--ink)' : 'var(--rule)'}`,
+                cursor: 'pointer',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Assumptions */}
       <div className="panel">
         <button
           onClick={() => setOpen(!open)}
@@ -189,59 +246,81 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
           {open ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
 
-        {!open && (
-          <p className="text-xs px-3.5 pb-3 -mt-1" style={{ color: 'var(--muted)' }}>
-            Heat: {a.heatDuration}+ days at {a.heatThreshold}°C or above. Cold: each{' '}
-            {a.coldDuration} days at a mean of {a.coldThreshold}°C or below. {gbp(a.payoutPerEvent, 0)}{' '}
-            per event, priced to a {pct(a.targetCombinedRatio)} combined ratio.
-          </p>
-        )}
-
         {open && (
           <div className="px-3.5 pb-3.5 space-y-3">
             <div>
               <p className="text-xs font-medium mb-2">Pricing target</p>
               <div className="grid grid-cols-2 gap-2">
-                <Field
-                  label="Combined ratio"
-                  value={Math.round(a.targetCombinedRatio * 100)}
-                  onChange={v => set({ targetCombinedRatio: v / 100 })}
-                  min={40}
-                  max={120}
-                  suffix="%"
-                />
-                <Field
-                  label="Expense ratio"
-                  value={Math.round(a.expenseRatio * 100)}
-                  onChange={v => set({ expenseRatio: v / 100 })}
-                  min={0}
-                  max={80}
-                  suffix="%"
-                />
+                <Field label="Combined ratio" value={Math.round(a.targetCombinedRatio * 100)} onChange={v => set({ targetCombinedRatio: v / 100 })} min={40} max={120} suffix="%" />
+                <Field label="Expense ratio" value={Math.round(a.expenseRatio * 100)} onChange={v => set({ expenseRatio: v / 100 })} min={0} max={80} suffix="%" />
               </div>
               {invalid && (
                 <p className="text-xs mt-2 text-red-700">
-                  The combined ratio must be higher than the expense ratio, or there is nothing left
-                  to pay claims with.
+                  The combined ratio must be higher than the expense ratio, or there is nothing left to
+                  pay claims with.
                 </p>
               )}
-            </div>
+              <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                At {pct(a.targetCombinedRatio)} combined and {pct(a.expenseRatio)} expenses, claims take{' '}
+                {pct(a.targetCombinedRatio - a.expenseRatio)} of premium. The FCA reports UK motor at 54%
+                and home at 46%, against 4% for GAP add-ons.
+              </p>
 
-            <div className="hairline pt-3">
-              <p className="text-xs font-medium mb-2">Heatwave trigger</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Daily max at or above" value={a.heatThreshold} onChange={v => set({ heatThreshold: v })} suffix="°C" step={0.5} />
-                <Field label="For at least" value={a.heatDuration} onChange={v => set({ heatDuration: Math.max(1, Math.round(v)) })} min={1} max={14} suffix="days" />
+              <div className="hairline pt-3 mt-3">
+                <p className="text-xs font-medium mb-2">Volume discount, optional</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field
+                    label="Points off per doubling"
+                    value={+(a.volumeDiscountPerDoubling * 100).toFixed(1)}
+                    onChange={v => set({ volumeDiscountPerDoubling: Math.max(0, v) / 100 })}
+                    step={0.5}
+                    min={0}
+                    max={10}
+                    suffix="pp"
+                  />
+                  <Field
+                    label="Reference book size"
+                    value={a.referencePolicies}
+                    onChange={v => set({ referencePolicies: Math.max(1, Math.round(v)) })}
+                    step={1000}
+                    min={1}
+                  />
+                </div>
+                <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                  {discountOn ? (
+                    <>
+                      The expense ratio is {pct(a.expenseRatio)} at{' '}
+                      {a.referencePolicies.toLocaleString('en-GB')} policies and moves by{' '}
+                      {(a.volumeDiscountPerDoubling * 100).toFixed(1)} points with each doubling or
+                      halving of the book. At {book.toLocaleString('en-GB')} policies it is{' '}
+                      {pct(effectiveExpenseRatio(a, book), 1)}.
+                    </>
+                  ) : (
+                    'Zero means a flat expense ratio at every book size. Set a figure to apply your own scale curve, which raises the price for small books as well as lowering it for large ones.'
+                  )}
+                </p>
               </div>
             </div>
 
-            <div className="hairline pt-3">
-              <p className="text-xs font-medium mb-2">Cold wave trigger</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Daily mean at or below" value={a.coldThreshold} onChange={v => set({ coldThreshold: v })} suffix="°C" step={0.5} />
-                <Field label="Each run of" value={a.coldDuration} onChange={v => set({ coldDuration: Math.max(1, Math.round(v)) })} min={1} max={21} suffix="days" />
+            {showHeat && (
+              <div className="hairline pt-3">
+                <p className="text-xs font-medium mb-2">Heatwave trigger</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Daily max at or above" value={a.heatThreshold} onChange={v => set({ heatThreshold: v })} suffix="°C" step={0.5} />
+                  <Field label="For at least" value={a.heatDuration} onChange={v => set({ heatDuration: Math.max(1, Math.round(v)) })} min={1} max={14} suffix="days" />
+                </div>
               </div>
-            </div>
+            )}
+
+            {showCold && (
+              <div className="hairline pt-3">
+                <p className="text-xs font-medium mb-2">Cold wave trigger</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Daily mean at or below" value={a.coldThreshold} onChange={v => set({ coldThreshold: v })} suffix="°C" step={0.5} />
+                  <Field label="Each run of" value={a.coldDuration} onChange={v => set({ coldDuration: Math.max(1, Math.round(v)) })} min={1} max={21} suffix="days" />
+                </div>
+              </div>
+            )}
 
             <div className="hairline pt-3">
               <p className="text-xs font-medium mb-2">Cover and uptake</p>
@@ -250,6 +329,10 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
                 <Field label="Max events a year" value={a.annualLimit} onChange={v => set({ annualLimit: Math.max(1, Math.round(v)) })} min={1} max={20} />
                 <Field label="Adoption" value={+(a.adoption * 100).toFixed(2)} onChange={v => set({ adoption: Math.max(0, v) / 100 })} step={0.1} min={0} max={100} suffix="%" />
               </div>
+              <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                Payout scales every money figure and leaves every ratio unchanged. Adoption changes the
+                portfolio only, never the price of a single policy.
+              </p>
             </div>
 
             {!isDefault && (
@@ -279,68 +362,76 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
         </div>
       )}
 
-      {result && !loading && !invalid && (
+      {result && selected && !loading && !invalid && (
         <>
           {/* Price per policy */}
           <Section title="Price per policy">
             <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-xs tnum" style={{ minWidth: 280 }}>
+              <table className="w-full text-xs tnum" style={{ minWidth: 240 }}>
                 <thead>
                   <tr style={{ color: 'var(--muted)' }}>
                     <th className="text-left font-medium pb-1.5 pl-1" />
-                    <th className="text-right font-medium pb-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="size-2 rounded-full" style={{ background: 'var(--heat-warm)' }} />
-                        Heat
-                      </span>
-                    </th>
-                    <th className="text-right font-medium pb-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="size-2 rounded-full" style={{ background: 'var(--heat-cool)' }} />
-                        Cold
-                      </span>
-                    </th>
-                    <th className="text-right font-medium pb-1.5 pr-1">Both</th>
+                    {showHeat && (
+                      <th className="text-right font-medium pb-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="size-2 rounded-full" style={{ background: 'var(--heat-warm)' }} />
+                          Heat
+                        </span>
+                      </th>
+                    )}
+                    {showCold && (
+                      <th className="text-right font-medium pb-1.5">
+                        <span className="inline-flex items-center gap-1">
+                          <span className="size-2 rounded-full" style={{ background: 'var(--heat-cool)' }} />
+                          Cold
+                        </span>
+                      </th>
+                    )}
+                    {showBoth && <th className="text-right font-medium pb-1.5 pr-1">Both</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map(r => (
-                    <tr
-                      key={r.label}
-                      className="border-t"
-                      style={{ borderColor: 'var(--rule)', fontWeight: r.strong ? 600 : 400 }}
-                    >
+                    <tr key={r.label} className="border-t" style={{ borderColor: 'var(--rule)', fontWeight: r.strong ? 600 : 400 }}>
                       <td className="py-1.5 pl-1 pr-2" style={{ color: r.strong ? 'var(--ink)' : 'var(--muted)' }}>
                         {r.label}
                       </td>
-                      <td className="py-1.5 text-right">{cell(result.heat.price, r.pick)}</td>
-                      <td className="py-1.5 text-right">{cell(result.cold.price, r.pick)}</td>
-                      <td className="py-1.5 text-right pr-1">{cell(result.combined, r.pick)}</td>
+                      {showHeat && <td className="py-1.5 text-right">{cell(result.heat.price, r.pick)}</td>}
+                      {showCold && <td className="py-1.5 text-right">{cell(result.cold.price, r.pick)}</td>}
+                      {showBoth && <td className="py-1.5 text-right pr-1">{cell(result.combined, r.pick)}</td>}
                     </tr>
                   ))}
                   <tr className="border-t" style={{ borderColor: 'var(--rule)' }}>
                     <td className="py-1.5 pl-1 pr-2" style={{ color: 'var(--muted)' }}>
                       Premium on 2031 to 2050 climate
                     </td>
-                    {projectionLoading ? (
+                    {projectionLoading || projectionError ? (
                       <td colSpan={3} className="py-1.5 text-right pr-1" style={{ color: 'var(--muted)' }}>
-                        <Loader2 className="size-3 animate-spin inline" /> projecting
-                      </td>
-                    ) : projectionError ? (
-                      <td colSpan={3} className="py-1.5 text-right pr-1" style={{ color: 'var(--muted)' }}>
-                        unavailable
+                        {projectionLoading ? (
+                          <>
+                            <Loader2 className="size-3 animate-spin inline" /> projecting
+                          </>
+                        ) : (
+                          'unavailable'
+                        )}
                       </td>
                     ) : (
                       <>
-                        <td className="py-1.5 text-right">
-                          {result.heat.price.priceable && projection?.heatPremium != null ? gbp(projection.heatPremium) : '-'}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          {result.cold.price.priceable && projection?.coldPremium != null ? gbp(projection.coldPremium) : '-'}
-                        </td>
-                        <td className="py-1.5 text-right pr-1">
-                          {projection?.combinedPremium != null && result.combined.priceable ? gbp(projection.combinedPremium) : '-'}
-                        </td>
+                        {showHeat && (
+                          <td className="py-1.5 text-right">
+                            {result.heat.price.priceable && projection?.heatPremium != null ? gbp(projection.heatPremium) : '-'}
+                          </td>
+                        )}
+                        {showCold && (
+                          <td className="py-1.5 text-right">
+                            {result.cold.price.priceable && projection?.coldPremium != null ? gbp(projection.coldPremium) : '-'}
+                          </td>
+                        )}
+                        {showBoth && (
+                          <td className="py-1.5 text-right pr-1">
+                            {result.combined.priceable && projection?.combinedPremium != null ? gbp(projection.combinedPremium) : '-'}
+                          </td>
+                        )}
                       </>
                     )}
                   </tr>
@@ -350,30 +441,42 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
 
             <div className="text-xs mt-3 pt-2 hairline leading-relaxed space-y-1.5" style={{ color: 'var(--muted)' }}>
               <p>
-                Priced to a {pct(a.targetCombinedRatio)} combined ratio: {pct(lossRatio)} of premium
-                pays claims, {pct(a.expenseRatio)} covers expenses and {pct(1 - a.targetCombinedRatio)} is
-                margin. Return on capital is that margin against the capital needed to survive a
-                1-in-200 year.
+                Priced to a {pct(a.targetCombinedRatio)} combined ratio, so claims and expenses together
+                take {pct(a.targetCombinedRatio)} of premium and {pct(1 - a.targetCombinedRatio)} is margin.
+                The loss ratio is what that leaves for claims. The FCA publishes the same measure for
+                every UK retail product: 54% for motor, 46% for home and 4% for GAP add-ons.
               </p>
-              {(!result.heat.price.priceable || !result.cold.price.priceable) && (
+              {((showHeat && !result.heat.price.priceable) || (showCold && !result.cold.price.priceable)) && (
                 <p>
                   A dash means no qualifying event in {endYear - startYear + 1} years. That is not zero
                   risk. It means this record cannot support a price at this trigger.
                 </p>
               )}
-              {result.heat.price.priceable &&
-                result.cold.price.priceable &&
-                result.combined.tailPayout < separateTail && (
-                  <p>
-                    Writing both in one book cuts the 1-in-200 payout from {gbp(separateTail, 0)} to{' '}
-                    {gbp(result.combined.tailPayout, 0)}, because the perils fall in different seasons.
-                  </p>
-                )}
+              {showBoth && result.heat.price.priceable && result.cold.price.priceable && (
+                <p>
+                  Both costs exactly what heat and cold cost separately, because expected claims simply
+                  add up. What bundling changes is the tail: the 1-in-200 payout falls from{' '}
+                  {gbp(separateTail, 0)} to {gbp(result.combined.tailPayout, 0)}, since a severe summer and
+                  a severe winter are independent. Same premium, {capitalSaved > 0 ? 'less' : 'the same'}{' '}
+                  capital, so a better return on it.
+                </p>
+              )}
             </div>
           </Section>
+        </>
+      )}
 
+      {result && !loading && !invalid && (
+        <>
           {/* Portfolio */}
-          <Section title="Portfolio" aside={<span className="text-xs" style={{ color: 'var(--muted)' }}>heat and cold together</span>}>
+          <Section
+            title="Portfolio"
+            aside={
+              <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                {peril === 'both' ? 'heat and cold' : peril === 'heat' ? 'heat only' : 'cold only'}
+              </span>
+            }
+          >
             {populationLoading ? (
               <div className="flex items-center gap-2 text-xs py-1" style={{ color: 'var(--muted)' }}>
                 <Loader2 className="size-3.5 animate-spin" />
@@ -383,8 +486,8 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
               <div className="space-y-2">
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>
                   {populationError
-                    ? 'The population service did not respond. Enter a population for this area to continue.'
-                    : 'Enter a population for this area.'}
+                    ? 'The population service did not respond. Enter a population for this area to size the book.'
+                    : 'Enter a population for this area to size the book.'}
                 </p>
                 <div className="flex gap-2">
                   <input
@@ -412,14 +515,14 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
                 <Line label="Population" value={Math.round(population).toLocaleString('en-GB')} note={`WorldPop ${POPULATION_YEAR} estimate`} />
                 <Line label="Policies in force" value={(policies ?? 0).toLocaleString('en-GB')} note={`${pct(a.adoption, a.adoption < 0.01 ? 2 : 1)} adoption`} />
                 <div className="hairline mt-1 pt-1">
-                  <Line label="Premium income" value={result.combined.priceable ? compact((policies ?? 0) * result.combined.premium) : '-'} strong />
-                  <Line label="Expected annual payout" value={compact((policies ?? 0) * result.combined.expectedPayout)} />
-                  <Line label="1-in-200 year payout" value={compact((policies ?? 0) * result.combined.tailPayout)} />
+                  <Line label="Premium income" value={selected.priceable ? compact((policies ?? 0) * selected.premium) : '-'} strong />
+                  <Line label="Expected annual payout" value={compact((policies ?? 0) * selected.expectedPayout)} />
+                  <Line label="1-in-200 year payout" value={compact((policies ?? 0) * selected.tailPayout)} />
                 </div>
                 <p className="text-xs mt-2 pt-2 hairline leading-relaxed" style={{ color: 'var(--muted)' }}>
-                  Every policy here pays on the same reading, so all of them trigger together. The
-                  1-in-200 year payout is the whole book paying at once, and it is the figure an
-                  insurer has to hold capital against.
+                  Every policy here pays on the same reading, so they all trigger together and the
+                  1-in-200 year payout is the whole book paying at once. That is the figure an insurer
+                  holds capital against.{discountOn ? ' Book size also feeds the price through the volume discount.' : ' Book size does not affect the price unless a volume discount is set.'}
                 </p>
               </>
             )}
@@ -434,16 +537,16 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = props => {
                   <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: '#5a6876' }} tickLine={false} axisLine={false} width={24} />
                   <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, borderColor: '#d3dae2' }} cursor={{ fill: 'rgba(22,32,44,0.05)' }} />
                   <Legend iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="Heat" fill="#ff4500" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Cold" fill="#4169e1" radius={[2, 2, 0, 0]} />
+                  {showHeat && <Bar dataKey="Heat" fill="#ff4500" radius={[2, 2, 0, 0]} />}
+                  {showCold && <Bar dataKey="Cold" fill="#4169e1" radius={[2, 2, 0, 0]} />}
                 </BarChart>
               </ResponsiveContainer>
             </div>
             <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--muted)' }}>
               As recorded. The summer trend here is {signed(result.heat.slopePerDecade)}°C a decade and the
-              winter trend {signed(result.cold.slopePerDecade)}°C a decade. Before pricing, each year is adjusted to today’s climate, which gives{' '}
-              {result.heat.frequency.mean.toFixed(2)} heat events a year against{' '}
-              {result.heat.observedMean.toFixed(2)} as recorded, and{' '}
+              winter trend {signed(result.cold.slopePerDecade)}°C a decade. Before pricing, each year is
+              adjusted to today’s climate, which gives {result.heat.frequency.mean.toFixed(2)} heat events a
+              year against {result.heat.observedMean.toFixed(2)} as recorded, and{' '}
               {result.cold.frequency.mean.toFixed(2)} cold against {result.cold.observedMean.toFixed(2)}.
             </p>
           </Section>

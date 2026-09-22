@@ -20,8 +20,10 @@ import { DailySeries, ModelSeries, BASELINE, FUTURE } from './ClimateData';
 // ---------------------------------------------------------------------------
 
 export interface Assumptions {
-  targetCombinedRatio: number; // claims plus expenses as a share of premium
-  expenseRatio: number;        // expenses as a share of premium
+  targetCombinedRatio: number;  // claims plus expenses as a share of premium
+  expenseRatio: number;         // expenses as a share of premium, at the reference book size
+  referencePolicies: number;    // the book size the expense ratio above refers to
+  volumeDiscountPerDoubling: number; // percentage points off the expense ratio per doubling
   heatThreshold: number;       // daily maximum at or above, degC
   heatDuration: number;        // consecutive days for one heat event
   coldThreshold: number;       // daily mean at or below, degC
@@ -40,6 +42,8 @@ export interface Assumptions {
 export const DEFAULTS: Assumptions = {
   targetCombinedRatio: 0.85,
   expenseRatio: 0.3,
+  referencePolicies: 10000,
+  volumeDiscountPerDoubling: 0,
   heatThreshold: 28,
   heatDuration: 3,
   coldThreshold: 0,
@@ -238,6 +242,8 @@ export interface Price {
   eventsPerYear: number;       // fitted mean, uncapped
   expectedPayout: number;      // per policy per year
   expenses: number;
+  expenseRatio: number;        // after any volume discount
+  lossRatio: number;           // claims as a share of premium, for benchmarking
   margin: number;
   premium: number;
   tailPayout: number;          // 1-in-200 year payout per policy
@@ -246,18 +252,53 @@ export interface Price {
   priceable: boolean;
 }
 
+// An expense ratio cannot fall to nothing, and enough must be left for claims.
+const MIN_EXPENSE_RATIO = 0.02;
+const MIN_LOSS_RATIO = 0.02;
+
+/**
+ * Expense ratio after any volume discount the underwriter has set.
+ *
+ * Expressed as percentage points removed per doubling of the book above a
+ * reference size, which is the shape real scale curves take: each doubling
+ * buys roughly the same saving, not each extra policy. Setting the discount
+ * to zero, the default, gives a flat expense ratio at every book size.
+ *
+ * The curve works in both directions. A book smaller than the reference is
+ * charged a higher expense ratio by the same rule.
+ */
+export function effectiveExpenseRatio(a: Assumptions, policies: number): number {
+  const book = Math.max(1, policies);
+  const reference = Math.max(1, a.referencePolicies);
+  const doublings = Math.log2(book / reference);
+  const raw = a.expenseRatio - a.volumeDiscountPerDoubling * doublings;
+  const ceiling = Math.max(MIN_EXPENSE_RATIO, a.targetCombinedRatio - MIN_LOSS_RATIO);
+  return Math.min(ceiling, Math.max(MIN_EXPENSE_RATIO, raw));
+}
+
+/**
+ * Premium is solved so the combined ratio lands exactly on the target.
+ *
+ *   claims + expenses = target combined ratio x premium
+ *
+ * With expenses a share of premium, the loss ratio is simply what the target
+ * leaves after expenses, and the premium follows directly.
+ */
 export function priceFrom(
   dist: number[],
   eventsPerYear: number,
-  a: Assumptions
+  a: Assumptions,
+  policies: number
 ): Price {
-  const lossRatio = a.targetCombinedRatio - a.expenseRatio;
   const expectedPayout = expectedValue(dist) * a.payoutPerEvent;
   const tailPayout = percentile(dist, TAIL_LEVEL) * a.payoutPerEvent;
+
+  const expenseRatio = effectiveExpenseRatio(a, policies);
+  const lossRatio = a.targetCombinedRatio - expenseRatio;
   const priceable = lossRatio > 0 && expectedPayout > 0;
 
   const premium = priceable ? expectedPayout / lossRatio : 0;
-  const expenses = premium * a.expenseRatio;
+  const expenses = premium * expenseRatio;
   const margin = premium * (1 - a.targetCombinedRatio);
   const capital = Math.max(0, tailPayout - expectedPayout);
 
@@ -265,6 +306,8 @@ export function priceFrom(
     eventsPerYear,
     expectedPayout,
     expenses,
+    expenseRatio,
+    lossRatio,
     margin,
     premium,
     tailPayout,
@@ -296,7 +339,8 @@ function analysePeril(
   peril: 'heat' | 'cold',
   a: Assumptions,
   startYear: number,
-  endYear: number
+  endYear: number,
+  policies: number
 ): PerilResult {
   const values = peril === 'heat' ? series.tmax : series.tmean;
   const meets =
@@ -318,7 +362,7 @@ function analysePeril(
     adjusted,
     frequency,
     dist,
-    price: priceFrom(dist, frequency.mean, a),
+    price: priceFrom(dist, frequency.mean, a, policies),
     slopePerDecade: trend.slopePerDecade,
     observedMean: obs.reduce((x, y) => x + y, 0) / Math.max(1, obs.length),
   };
@@ -335,10 +379,11 @@ export function analyse(
   series: DailySeries,
   a: Assumptions,
   startYear: number,
-  endYear: number
+  endYear: number,
+  policies: number
 ): LocationResult {
-  const heat = analysePeril(series, 'heat', a, startYear, endYear);
-  const cold = analysePeril(series, 'cold', a, startYear, endYear);
+  const heat = analysePeril(series, 'heat', a, startYear, endYear, policies);
+  const cold = analysePeril(series, 'cold', a, startYear, endYear, policies);
 
   // Heat and cold fall in different seasons, so they are treated as
   // independent. Combining them in one book diversifies the tail.
@@ -346,7 +391,8 @@ export function analyse(
   const combined = priceFrom(
     combinedDist,
     heat.frequency.mean + cold.frequency.mean,
-    a
+    a,
+    policies
   );
 
   return { heat, cold, combined, combinedDist };
@@ -403,7 +449,7 @@ function scaleFor(
   return ratios.reduce((x, y) => x + y, 0) / ratios.length;
 }
 
-function scaledPrice(peril: PerilResult, scale: number, a: Assumptions): { price: Price; dist: number[] } {
+function scaledPrice(peril: PerilResult, scale: number, a: Assumptions, policies: number): { price: Price; dist: number[] } {
   const f = peril.frequency;
   if (f.model === 'None') return { price: peril.price, dist: peril.dist };
   const dispersion = f.variance / f.mean;
@@ -414,25 +460,26 @@ function scaledPrice(peril: PerilResult, scale: number, a: Assumptions): { price
     model: dispersion > 1.05 ? 'Negative binomial' : 'Poisson',
   };
   const dist = paidDistribution(scaled, a.annualLimit);
-  return { price: priceFrom(dist, mean, a), dist };
+  return { price: priceFrom(dist, mean, a, policies), dist };
 }
 
 export function project(
   base: LocationResult,
   models: ModelSeries,
-  a: Assumptions
+  a: Assumptions,
+  policies: number
 ): ProjectionResult {
   const heatScale = scaleFor(models, 'heat', a);
   const coldScale = scaleFor(models, 'cold', a);
 
-  const heat = heatScale !== null ? scaledPrice(base.heat, heatScale, a) : null;
-  const cold = coldScale !== null ? scaledPrice(base.cold, coldScale, a) : null;
+  const heat = heatScale !== null ? scaledPrice(base.heat, heatScale, a, policies) : null;
+  const cold = coldScale !== null ? scaledPrice(base.cold, coldScale, a, policies) : null;
 
   let combinedPremium: number | null = null;
   if (heat || cold) {
     const hd = heat ? heat.dist : base.heat.dist;
     const cd = cold ? cold.dist : base.cold.dist;
-    combinedPremium = priceFrom(convolve(hd, cd), 0, a).premium;
+    combinedPremium = priceFrom(convolve(hd, cd), 0, a, policies).premium;
   }
 
   return {

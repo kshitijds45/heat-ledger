@@ -4,7 +4,7 @@ import { Square, HelpCircle } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { AreaMap } from './components/AreaMap';
 import { LocationSearch, SearchBounds } from './components/LocationSearch';
-import { ResultsPanel } from './components/ResultsPanel';
+import { ResultsPanel, Peril } from './components/ResultsPanel';
 import { Method } from './components/Method';
 import { Tour, hasSeenTour, markTourSeen } from './components/Tour';
 import { TOOL_NAME, CREATOR } from './branding';
@@ -43,6 +43,7 @@ export default function App() {
   const [draw, setDraw] = useState<{ start: () => void; drawing: boolean } | null>(null);
 
   const [assumptions, setAssumptions] = useState<Assumptions>(DEFAULTS);
+  const [peril, setPeril] = useState<Peril>('both');
 
   const [history, setHistory] = useState<DailySeries | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -130,14 +131,20 @@ export default function App() {
 
   // Everything below recalculates instantly when an assumption changes,
   // from the stored daily record. No new request is made.
+  // Book size only reaches the price through the volume discount, which is off
+  // by default. Before a population arrives the reference book size is assumed,
+  // so the price shows immediately and simply does not carry a discount yet.
+  const policies = population !== null ? Math.max(1, Math.round(population * assumptions.adoption)) : null;
+  const bookForPricing = policies ?? assumptions.referencePolicies;
+
   const result = useMemo(
-    () => (history ? analyse(history, assumptions, startYear, endYear) : null),
-    [history, assumptions, startYear, endYear]
+    () => (history ? analyse(history, assumptions, startYear, endYear, bookForPricing) : null),
+    [history, assumptions, startYear, endYear, bookForPricing]
   );
 
   const projection = useMemo(
-    () => (result && models ? project(result, models, assumptions) : null),
-    [result, models, assumptions]
+    () => (result && models ? project(result, models, assumptions, bookForPricing) : null),
+    [result, models, assumptions, bookForPricing]
   );
 
   const handleSearch = (lat: number, lon: number, name: string, b: SearchBounds) => {
@@ -252,6 +259,9 @@ export default function App() {
               onAssumptionsChange={setAssumptions}
               onReset={() => setAssumptions(DEFAULTS)}
               isDefault={sameAssumptions(assumptions, DEFAULTS)}
+              peril={peril}
+              onPerilChange={setPeril}
+              policies={policies}
               population={population}
               populationLoading={popLoading}
               populationError={popError}

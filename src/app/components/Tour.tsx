@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
 import { TOOL_NAME, TOOL_TAGLINE, CREATOR } from '../branding';
 
-const STORAGE_KEY = 'heat-ledger-tour-seen-v2';
+const STORAGE_KEY = 'bellweather-tour-seen-v1';
 
 const STEPS = [
   {

@@ -1,10 +1,10 @@
-# Heat Ledger
+# BellWeather
 
 Heatwave and cold wave insurance, priced from open climate data.
 
 **Live site:** https://kshitijds45.github.io/heat-ledger/
 
-Pick any area and Heat Ledger prices parametric cover against both perils: how often each
+Pick any area and BellWeather prices parametric cover against both perils: how often each
 trigger fires in today's climate, the premium that hits a target combined ratio, the 1-in-200
 year payout and what a book of policies across the area would earn and lose. No API keys, no
 backend. Every figure comes from a public source, and every request is logged to the browser
@@ -34,12 +34,20 @@ Both default triggers are official UK definitions:
 3. **Fitted frequency.** A Poisson or, where hot summers bring clusters of heatwaves, a negative
    binomial distribution is fitted to events per year. 35 years cannot show a 1-in-200 year
    directly, so the tail is read from the distribution.
-4. **Price.** The premium is set so the combined ratio hits the target:
+4. **Price.** The premium is solved so the combined ratio hits the target.
 
    ```
    combined ratio = loss ratio + expense ratio   (85% = 55% + 30% by default)
    premium        = expected payout ÷ loss ratio
    ```
+
+   The resulting loss ratio is worth reading against the market. The FCA's 2024 value measures data
+   puts claims costs at 54% of premium for UK motor insurance and 46% for home, against 4% for GAP
+   sold as an add-on. A 55% target is a deliberate position, not an accident.
+
+   An optional **volume discount** lets an underwriter apply their own scale curve, expressed as
+   percentage points off the expense ratio per doubling of the book. It is off by default, so the
+   expense ratio is flat unless you choose otherwise.
 
 5. **Capital check.** The 1-in-200 year payout (the Solvency II and Solvency UK 99.5% standard)
    and the return the margin earns on the capital that tail requires. Pricing to a fixed combined
@@ -51,7 +59,7 @@ Both default triggers are official UK definitions:
 7. **2031 to 2050.** Each CMIP6 model's future event rate is compared with its own baseline, and
    that ratio is applied to the adjusted history, so model bias cancels.
 
-All assumptions (triggers, payout, annual limit, combined ratio, expense ratio, adoption) can be
+All assumptions (triggers, payout, annual limit, combined ratio, expense ratio, volume discount, adoption) can be
 changed in the app, and every figure recalculates instantly.
 
 ## Data
@@ -71,6 +79,12 @@ changed in the app, and every figure recalculates instantly.
 - **Thin history for rare perils.** Cold cover in a mild city rests on very few events.
 - **Population is from 2020**, the latest WorldPop year. Adoption is an assumption.
 - **Not a quotation.** Nobody has underwritten anything here.
+
+Every assumption is labelled in the app by the weight of evidence behind it. The triggers and the
+99.5% capital standard come from the Met Office, the Cold Weather Payment scheme and Solvency UK.
+The loss ratio benchmark comes from FCA published data. The expense ratio is conventional but not
+published for this product, and the volume discount, payout, limit and adoption are product design
+choices rather than findings.
 
 ## Running and deploying
 

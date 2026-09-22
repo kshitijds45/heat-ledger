@@ -173,11 +173,44 @@ export const Method: React.FC = () => (
           multiplied by the payout per event. Changing the payout scales every money figure and leaves
           every ratio unchanged.
         </P>
+        <P>
+          The loss ratio is worth reading against the market. The FCA publishes claims costs as a
+          proportion of premium for every retail insurance product sold in the UK. In its 2024 data
+          that figure was 54% for motor insurance and 46% for home insurance, while the products it has
+          criticised for poor value sat far lower: 4% for GAP insurance sold as an add-on, and around
+          9% for annual European travel cover. A parametric product is structurally closest to travel
+          and personal accident, which is exactly where those low ratios cluster, so pricing this one
+          to a loss ratio near motor and home is a deliberate choice rather than an accident.
+        </P>
       </Section>
 
-      <Section n={7} title="The capital check">
+      <Section n={7} title="Volume discount">
         <P>
-          Pricing to a fixed combined ratio gives every location the same{' '}
+          Expenses are a flat share of premium by default, which assumes a small book costs the same
+          per policy to run as a large one. That is not true in practice. Commission and per-policy
+          admin do scale with the book, but platform, compliance and actuarial costs are largely fixed
+          and get cheaper per policy as volume grows.
+        </P>
+        <P>
+          Rather than guess an insurer's cost structure, the tool lets an underwriter apply their own
+          scale curve. The discount is expressed as percentage points off the expense ratio for each
+          doubling of the book, which is the shape real scale effects take: each doubling buys roughly
+          the same saving, not each additional policy.
+        </P>
+        <F>
+          expense ratio = base − discount × log₂(policies ÷ reference book size)
+        </F>
+        <P>
+          Set the discount to zero, the default, and the expense ratio is flat at every size. Set it to
+          three points per doubling from a reference of ten thousand policies, and a forty thousand
+          policy book runs at 24% while a two and a half thousand policy book runs at 36%. The curve
+          works in both directions, so small books are charged more, which is the honest treatment.
+          The result is floored so expenses never vanish and capped so claims always retain a share.
+        </P>
+      </Section>
+      <Section n={8} title="The capital check">
+        <P>
+          Pricing to a fixed combined ratio gives every location and every book the same{' '}
           {pc(1 - DEFAULTS.targetCombinedRatio)} margin, however lumpy its risk. A peril that pays a
           little most years and one that pays nothing for decades then a lot should not earn the same
           margin. The capital check shows which is which.
@@ -202,7 +235,7 @@ export const Method: React.FC = () => (
         </P>
       </Section>
 
-      <Section n={8} title="The portfolio">
+      <Section n={9} title="The portfolio">
         <F>
           policies in force = population × adoption rate
           <br />
@@ -211,14 +244,14 @@ export const Method: React.FC = () => (
           1-in-200 year payout = policies × 1-in-200 year payout per policy
         </F>
         <P>
-          The last line is a straight multiplication, and that is the most important fact about this
-          product. Every policy in the area pays on the same reading, so they all trigger together. There
+          The 1-in-200 line is a straight multiplication, and that is the most important fact about
+          this product. Every policy in the area pays on the same reading, so they all trigger together. There
           is no diversification inside an area: a million policies are one risk a million times over.
           Diversification only comes from writing in places whose weather does not move together.
         </P>
       </Section>
 
-      <Section n={9} title="The 2031 to 2050 premium">
+      <Section n={10} title="The 2031 to 2050 premium">
         <P>
           Climate models run warm or cold against observed weather, so their event counts are not used
           directly. Each model is compared with itself instead: its event rate over {FUTURE.start} to{' '}
@@ -233,7 +266,7 @@ export const Method: React.FC = () => (
         </P>
       </Section>
 
-      <Section n={10} title="What this cannot tell you">
+      <Section n={11} title="What this cannot tell you">
         <ul className="text-sm space-y-2" style={{ color: 'var(--ink-soft)', maxWidth: '68ch' }}>
           <li>
             <strong>Basis risk.</strong> The index is one grid point. A policyholder can suffer on a day the
@@ -267,7 +300,47 @@ export const Method: React.FC = () => (
         </ul>
       </Section>
 
-      <Section n={11} title="Attribution">
+      <Section n={12} title="Where the assumptions come from">
+        <P>
+          Not every input carries the same weight of evidence, so each is labelled by what stands
+          behind it.
+        </P>
+        <div className="overflow-x-auto mb-3">
+          <table className="w-full text-xs" style={{ minWidth: 520 }}>
+            <thead>
+              <tr style={{ color: 'var(--muted)' }}>
+                <th className="text-left font-medium pb-2">Input</th>
+                <th className="text-left font-medium pb-2">Evidence</th>
+                <th className="text-left font-medium pb-2">Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Heat trigger, 3 days at 28°C', 'Official', 'Met Office heatwave definition for Greater London'],
+                ['Cold trigger, 7 days at 0°C', 'Official', 'UK Cold Weather Payment scheme trigger'],
+                ['99.5% capital standard', 'Official', 'Solvency II and Solvency UK'],
+                ['Loss ratio benchmark', 'Official', 'FCA general insurance value measures data, 2024'],
+                ['Expense ratio, 30%', 'Indicative', 'Within the range typical of UK personal lines. Not a published figure for this product'],
+                ['Volume discount, off by default', 'Your input', 'No public data exists on insurer unit costs. Set your own curve'],
+                ['Payout, limit and adoption', 'Your input', 'Product design choices, not findings'],
+              ].map(r => (
+                <tr key={r[0]} className="border-t align-top" style={{ borderColor: 'var(--rule)' }}>
+                  <td className="py-2 pr-3" style={{ color: 'var(--ink)' }}>{r[0]}</td>
+                  <td className="py-2 pr-3" style={{ color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{r[1]}</td>
+                  <td className="py-2" style={{ color: 'var(--ink-soft)' }}>{r[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <P>
+          The triggers and the capital standard are not judgement calls. The pricing target and expense
+          ratio are conventional but not published for this product. Everything in the third group is a
+          decision for whoever is designing the cover.
+        </P>
+      </Section>
+
+      <Section n={13} title="Attribution">
         <P>
           Weather and climate data from Open-Meteo, used under its non-commercial terms. Historical data
           generated using Copernicus Climate Change Service information via ECMWF. Climate projections
