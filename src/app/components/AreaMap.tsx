@@ -8,6 +8,7 @@ interface AreaMapProps {
   onAreaDrawn: (b: Bounds) => void;
   onReady?: () => void;
   onDrawControl?: (start: () => void, drawing: boolean) => void;
+  compact?: boolean;
 }
 
 const MIN_SPAN_DEG = 0.01;

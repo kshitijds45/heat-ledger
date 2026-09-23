@@ -8,19 +8,20 @@ const STEPS = [
   {
     title: `What ${TOOL_NAME} does`,
     body:
-      'It prices insurance that pays a fixed sum when a heatwave or a cold wave hits. No claim and no loss adjuster: the temperature either crossed the line or it did not. Because the payout is fixed, the only question is how often the trigger fires, and that can be answered from thirty five years of public weather data.',
+      'It prices insurance that pays a fixed sum when a heatwave or a cold wave hits. No claim, no loss adjuster: the temperature either crossed the line or it did not. Because the payout is fixed by contract, the only real question is how often the trigger fires, and thirty five years of public weather data can answer that.',
   },
   {
-    title: 'Pick an area, get a price',
+    title: 'It runs as a sequence',
     body:
-      'London is loaded already. Search another city or draw your own area and everything recalculates: how often each trigger fires in today’s climate, the premium that hits an 85% combined ratio, the 1-in-200 year payout and whether the margin pays for the capital the risk ties up.',
+      'Start on the map and choose an area. Everything after that is one panel per stage: the product being sold, how often the trigger has fired, what it costs, how that changes by 2050, and what a whole book looks like. Use the numbered index at the top to jump between them, or return to the map at any point to price somewhere else.',
   },
   {
-    title: 'Change the product',
+    title: 'Then defend the numbers',
     body:
-      'Open Assumptions to change the triggers, the payout, the pricing target or the share of the population that buys cover. Every figure updates instantly. The Method page shows every source, formula and limitation behind the numbers.',
+      'Every assumption is yours to change, and the last panel sweeps any one of them across a range so you can show why a threshold or a target was chosen rather than simply asserting it. The Method page carries every source, formula and limitation behind the figures.',
   },
 ];
+
 
 export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const [step, setStep] = useState(0);

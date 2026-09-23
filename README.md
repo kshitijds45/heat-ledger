@@ -4,9 +4,9 @@ Heatwave and cold wave insurance, priced from open climate data.
 
 **Live site:** https://kshitijds45.github.io/heat-ledger/
 
-Pick any area and BellWeather prices parametric cover against both perils: how often each
-trigger fires in today's climate, the premium that hits a target combined ratio, the 1-in-200
-year payout and what a book of policies across the area would earn and lose. No API keys, no
+Pick an area and BellWeather takes you through it in sequence: the product being sold, how often
+the trigger has fired since 1991, what it costs, how that reprices on 2050 climate, what a whole
+book looks like, and a sensitivity sweep to evidence any parameter choice. No API keys, no
 backend. Every figure comes from a public source, and every request is logged to the browser
 console so it can be checked.
 

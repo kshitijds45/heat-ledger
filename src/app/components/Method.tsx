@@ -340,7 +340,24 @@ export const Method: React.FC = () => (
         </P>
       </Section>
 
-      <Section n={13} title="Attribution">
+      <Section n={13} title="Sensitivity analysis">
+        <P>
+          The sensitivity panel sweeps one parameter across a range while holding everything else
+          fixed, and reports the premium, loss ratio, tail and portfolio effect at each step. Every
+          row is a full recalculation across the whole temperature record rather than an
+          interpolation, so moving a trigger by a degree genuinely re-counts every event in{' '}
+          {YEARS} years of daily data.
+        </P>
+        <P>
+          Holding everything else constant is both the method and its limitation. Real decisions move
+          several parameters at once, and a one-at-a-time sweep cannot show the interactions. It is
+          evidence for a choice, not a substitute for judgement. Where a row shows a dash, no
+          qualifying event survives at that setting, which marks the point where the trigger stops
+          being insurable from this record.
+        </P>
+      </Section>
+
+      <Section n={14} title="Attribution">
         <P>
           Weather and climate data from Open-Meteo, used under its non-commercial terms. Historical data
           generated using Copernicus Climate Change Service information via ECMWF. Climate projections

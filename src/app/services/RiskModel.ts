@@ -495,20 +495,5 @@ export function project(
 // Formatting
 // ---------------------------------------------------------------------------
 
-export const gbp = (v: number, dp?: number): string => {
-  if (!isFinite(v)) return '-';
-  const d = dp ?? (Math.abs(v) >= 100 ? 0 : 2);
-  return `£${v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d })}`;
-};
-
-export const compact = (v: number): string => {
-  if (!isFinite(v)) return '-';
-  const abs = Math.abs(v);
-  if (abs >= 1e9) return `£${(v / 1e9).toFixed(2)}bn`;
-  if (abs >= 1e6) return `£${(v / 1e6).toFixed(1)}m`;
-  if (abs >= 1e3) return `£${(v / 1e3).toFixed(0)}k`;
-  return gbp(v, 0);
-};
-
 export const pct = (v: number | null, dp = 0): string =>
   v === null || !isFinite(v) ? '-' : `${(v * 100).toFixed(dp)}%`;
