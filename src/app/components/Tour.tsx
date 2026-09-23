@@ -48,12 +48,12 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
   return (
     <div
       className="fixed inset-0 z-[3000] flex items-center justify-center p-4"
-      style={{ background: 'rgba(8, 9, 11, 0.86)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(21, 23, 27, 0.55)', backdropFilter: 'blur(6px)' }}
       role="dialog"
       aria-modal="true"
       aria-label={`${TOOL_NAME} walkthrough`}
     >
-      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 30px 90px rgba(0,0,0,0.65)' }}>
+      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 30px 80px rgba(21,23,27,0.28)' }}>
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-1.5 rounded-md"

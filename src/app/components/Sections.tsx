@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { SectionHead, Figure, NumberField, Pills, Note, Empty } from './Bits';
 import {
@@ -15,8 +15,8 @@ import { POPULATION_YEAR, BASELINE, FUTURE } from '../services/ClimateData';
 
 export type Peril = 'heat' | 'cold' | 'both';
 
-const HEAT = '#ff7a45';
-const COLD = '#7fa6ff';
+const HEAT = '#e4572e';
+const COLD = '#2f5fd0';
 
 export const perilLabel: Record<Peril, string> = {
   heat: 'Heat only',
@@ -275,9 +275,9 @@ export const RiskSection: React.FC<{
               <div className="h-56 -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'rgba(244,241,234,0.48)' }} tickLine={false} axisLine={{ stroke: 'rgba(244,241,234,0.2)' }} interval={3} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'rgba(244,241,234,0.48)' }} tickLine={false} axisLine={false} width={26} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 3, background: '#121519', borderColor: 'rgba(244,241,234,0.2)', color: '#f4f1ea' }} itemStyle={{ color: '#f4f1ea' }} labelStyle={{ color: 'rgba(244,241,234,0.6)' }} cursor={{ fill: 'rgba(244,241,234,0.05)' }} />
+                    <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'rgba(21,23,27,0.5)' }} tickLine={false} axisLine={{ stroke: 'rgba(21,23,27,0.18)' }} interval={3} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'rgba(21,23,27,0.5)' }} tickLine={false} axisLine={false} width={26} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 3, background: '#fff', borderColor: 'rgba(21,23,27,0.18)', color: '#15171b' }} itemStyle={{ color: '#15171b' }} labelStyle={{ color: 'rgba(21,23,27,0.6)' }} cursor={{ fill: 'rgba(21,23,27,0.05)' }} />
                     <Legend iconSize={9} wrapperStyle={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }} />
                     {showHeat && <Bar dataKey="Heat" fill={HEAT} radius={[2, 2, 0, 0]} />}
                     {showCold && <Bar dataKey="Cold" fill={COLD} radius={[2, 2, 0, 0]} />}
@@ -413,7 +413,9 @@ export const OutlookSection: React.FC<{
   error: string | null;
   peril: Peril;
   currency: Currency;
-}> = ({ result, projection, loading, error, peril, currency }) => {
+  onRun: () => void;
+  hasRun: boolean;
+}> = ({ result, projection, loading, error, peril, currency, onRun, hasRun }) => {
   const showHeat = peril !== 'cold';
   const showCold = peril !== 'heat';
 
@@ -435,16 +437,38 @@ export const OutlookSection: React.FC<{
         index="05 / The outlook"
         title={`Repriced on ${FUTURE.start} to ${FUTURE.end} climate`}
         standfirst={`Pricing a one-year contract does not need this. Deciding whether to launch the product does. Each climate model is compared against its own ${BASELINE.start} to ${BASELINE.end} baseline, so model bias cancels and only the change carries through.`}
+        aside={
+          !hasRun && !loading ? (
+            <button onClick={onRun} className="btn-solid px-5 py-3 inline-flex items-center gap-2">
+              Run projection
+              <ArrowRight className="size-3.5" />
+            </button>
+          ) : undefined
+        }
       /></div>
 
       <div className="section-body section-inner">
+        {!hasRun && !loading && !error && (
+          <Empty>
+            Fifty years of daily output across two climate models is the heaviest request on the page,
+            heavy enough to exhaust the provider's per-minute allowance on its own. It therefore runs
+            only when asked, so it can never delay or break the pricing above it.
+          </Empty>
+        )}
         {loading && (
           <div className="panel panel-pad flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             <Loader2 className="size-4 animate-spin" />
-            Running the climate projection. This is the slowest request on the page.
+            Running the climate projection. This takes a few seconds.
           </div>
         )}
-        {error && !loading && <Empty>The climate projection is unavailable for this location. {error}</Empty>}
+        {error && !loading && (
+          <div className="panel panel-pad">
+            <p className="text-sm mb-3" style={{ color: 'var(--muted)' }}>
+              The projection did not return. {error}
+            </p>
+            <button onClick={onRun} className="btn-ghost px-4 py-2">Try again</button>
+          </div>
+        )}
 
         {projection && result && !loading && (
           <>

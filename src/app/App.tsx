@@ -111,36 +111,51 @@ export default function App() {
     setProjError(null);
     setPopError(null);
     setHistoryLoading(true);
-    setProjLoading(true);
     setPopLoading(true);
+    setProjLoading(false);
 
-    fetchHistory(c.lat, c.lon, ctrl.signal)
-      .then(h => !ctrl.signal.aborted && setHistory(h))
-      .catch(e => {
-        if (e?.name === 'AbortError') return;
+    try {
+      const h = await fetchHistory(c.lat, c.lon, ctrl.signal);
+      if (!ctrl.signal.aborted) setHistory(h);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
         console.error(e);
         setHistoryError(`Could not load the temperature record. ${e.message ?? ''}`.trim());
-      })
-      .finally(() => !ctrl.signal.aborted && setHistoryLoading(false));
+      }
+    } finally {
+      if (!ctrl.signal.aborted) setHistoryLoading(false);
+    }
 
-    fetchProjection(c.lat, c.lon, ctrl.signal)
-      .then(m => !ctrl.signal.aborted && setModels(m))
-      .catch(e => {
-        if (e?.name === 'AbortError') return;
-        console.error(e);
-        setProjError(e.message ?? 'Projection unavailable');
-      })
-      .finally(() => !ctrl.signal.aborted && setProjLoading(false));
-
-    fetchPopulation(b, ctrl.signal)
-      .then(p => !ctrl.signal.aborted && setPopulation(p))
-      .catch(e => {
-        if (e?.name === 'AbortError') return;
+    try {
+      const p = await fetchPopulation(b, ctrl.signal);
+      if (!ctrl.signal.aborted) setPopulation(p);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
         console.error(e);
         setPopError(e.message ?? 'Population unavailable');
-      })
-      .finally(() => !ctrl.signal.aborted && setPopLoading(false));
+      }
+    } finally {
+      if (!ctrl.signal.aborted) setPopLoading(false);
+    }
   }, []);
+
+  // The climate projection spans fifty years across two models, which is heavy
+  // enough to exhaust the minutely allowance by itself. It runs on request.
+  const runProjection = useCallback(async () => {
+    if (models || projLoading) return;
+    setProjLoading(true);
+    setProjError(null);
+    try {
+      const c = centreOf(area);
+      const m = await fetchProjection(c.lat, c.lon);
+      setModels(m);
+    } catch (e: any) {
+      console.error(e);
+      setProjError(e.message ?? 'Projection unavailable');
+    } finally {
+      setProjLoading(false);
+    }
+  }, [area, models, projLoading]);
 
   useEffect(() => {
     loadArea(LONDON.area);
@@ -214,7 +229,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Toaster position="top-center" theme="dark" />
+      <Toaster position="top-center" />
       <Tour open={tourOpen} onClose={() => { setTourOpen(false); markTourSeen(); }} />
 
       <header className="topbar">
@@ -309,7 +324,7 @@ export default function App() {
               />
 
               {!mapReady && (
-                <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--void)' }}>
+                <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--wash)' }}>
                   <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--heat-warm)' }} />
                 </div>
               )}
@@ -374,6 +389,8 @@ export default function App() {
               error={projError}
               peril={peril}
               currency={currency}
+              onRun={runProjection}
+              hasRun={models !== null}
             />
           </section>
 

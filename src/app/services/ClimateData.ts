@@ -34,8 +34,20 @@ export interface DailySeries {
   tmean: Array<number | null>;
 }
 
-async function getJson(url: string, signal?: AbortSignal): Promise<any> {
+const sleepMs = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+async function getJson(url: string, signal?: AbortSignal, attempt = 0): Promise<any> {
   const response = await fetch(url, { signal });
+
+  // Open-Meteo enforces a minutely allowance. Back off and retry rather than
+  // surfacing a rate limit to the user as a data failure.
+  if (response.status === 429 && attempt < 2) {
+    const retryAfter = Number(response.headers.get('retry-after'));
+    const wait = isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 6000 * (attempt + 1);
+    await sleepMs(wait);
+    return getJson(url, signal, attempt + 1);
+  }
+
   if (!response.ok) {
     let detail = '';
     try {
@@ -143,8 +155,6 @@ export const fetchProjection = async (
 // WorldPop's global dataset runs to 2020, which is its most recent year.
 export const POPULATION_YEAR = 2020;
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
-
 export const fetchPopulation = async (bounds: Bounds, signal?: AbortSignal): Promise<number> => {
   const { north: n, south: s, east: e, west: w } = bounds;
   const geojson = {
@@ -172,7 +182,7 @@ export const fetchPopulation = async (bounds: Bounds, signal?: AbortSignal): Pro
   // queued task instead, which has to be polled for its result.
   const deadline = Date.now() + 60_000;
   while (result?.status !== 'finished' && result?.taskid && Date.now() < deadline) {
-    await sleep(2000);
+    await sleepMs(2000);
     result = await getJson(`${WORLDPOP_API}/tasks/${result.taskid}`, signal);
   }
 

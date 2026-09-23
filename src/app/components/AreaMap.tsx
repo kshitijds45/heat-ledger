@@ -39,12 +39,11 @@ export const AreaMap: React.FC<AreaMapProps> = ({
       const leaflet = (await import('leaflet')).default;
       if (cancelled || !containerRef.current || mapRef.current) return;
       const m = leaflet.map(containerRef.current, { zoomControl: true });
-      // CARTO's dark basemap, free for this use with attribution, so the map
-      // belongs to the page rather than sitting on it as a bright rectangle.
+      // Plain OpenStreetMap. The styled basemaps all want an API key now,
+      // and a key cannot be kept secret in a static site anyway.
       leaflet
-        .tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© OpenStreetMap contributors © CARTO',
-          subdomains: 'abcd',
+        .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
           maxZoom: 19,
         })
         .addTo(m);
@@ -75,15 +74,15 @@ export const AreaMap: React.FC<AreaMapProps> = ({
         [area.south, area.west],
         [area.north, area.east],
       ],
-      { color: '#f4f1ea', weight: 1, fillColor: '#ff7a45', fillOpacity: 0.07, dashArray: '2 5' }
+      { color: '#15171b', weight: 1.5, fillColor: '#e4572e', fillOpacity: 0.1, dashArray: '3 5' }
     ).addTo(map);
 
     const c = centreOf(area);
     pinRef.current = L.circleMarker([c.lat, c.lon], {
       radius: 6,
-      color: '#08090b',
+      color: '#fff',
       weight: 2,
-      fillColor: '#ff7a45',
+      fillColor: '#e4572e',
       fillOpacity: 1,
     })
       .bindTooltip('Index point: every policy in this area pays on the temperature here', {
@@ -126,7 +125,7 @@ export const AreaMap: React.FC<AreaMapProps> = ({
     };
     const down = (e: any) => {
       start = e.latlng;
-      temp = L.rectangle([start, start], { color: '#ff7a45', weight: 1, fillOpacity: 0.12 }).addTo(map);
+      temp = L.rectangle([start, start], { color: '#e4572e', weight: 1.5, fillOpacity: 0.12 }).addTo(map);
     };
     const move = (e: any) => {
       if (start && temp) temp.setBounds([start, e.latlng]);
