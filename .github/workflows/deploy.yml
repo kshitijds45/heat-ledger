@@ -10,6 +10,7 @@ permissions:
   pages: write
   id-token: write
 
+# Let a running deploy finish, but drop any queued ones behind a newer push.
 concurrency:
   group: pages
   cancel-in-progress: false
