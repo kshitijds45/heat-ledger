@@ -48,12 +48,12 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
   return (
     <div
       className="fixed inset-0 z-[3000] flex items-center justify-center p-4"
-      style={{ background: 'rgba(22, 32, 44, 0.55)' }}
+      style={{ background: 'rgba(8, 9, 11, 0.86)', backdropFilter: 'blur(6px)' }}
       role="dialog"
       aria-modal="true"
       aria-label={`${TOOL_NAME} walkthrough`}
     >
-      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 24px 60px rgba(22,32,44,0.3)' }}>
+      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 30px 90px rgba(0,0,0,0.65)' }}>
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-1.5 rounded-md"
@@ -65,11 +65,11 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
         <div className="p-6">
           {first && (
             <div className="mb-5 pb-4" style={{ borderBottom: '1px solid var(--rule)' }}>
-              <h1 style={{ fontSize: 26, letterSpacing: '-0.02em' }}>{TOOL_NAME}</h1>
+              <h1 style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 38, letterSpacing: '-0.02em', lineHeight: 1 }}>{TOOL_NAME}</h1>
               <p className="text-xs mt-1.5" style={{ color: 'var(--muted)' }}>{TOOL_TAGLINE}</p>
             </div>
           )}
-          <h2 className="text-base mb-2">{STEPS[step].title}</h2>
+          <h2 className="mb-2.5" style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 24, letterSpacing: '-0.015em' }}>{STEPS[step].title}</h2>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{STEPS[step].body}</p>
 
           <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: '1px solid var(--rule)' }}>
@@ -83,7 +83,7 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
                     width: i === step ? 18 : 6,
                     height: 6,
                     borderRadius: 999,
-                    background: i === step ? 'var(--ink)' : 'var(--wash-deep)',
+                    background: i === step ? 'var(--heat-warm)' : 'var(--rule-strong)',
                     border: 0,
                     cursor: 'pointer',
                   }}
@@ -91,22 +91,22 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={onClose} className="text-xs px-3 py-1.5" style={{ color: 'var(--muted)', background: 'transparent', border: 0, cursor: 'pointer' }}>
+              <button onClick={onClose} className="utility px-3 py-1.5" style={{ color: 'var(--muted)', background: 'transparent', border: 0, cursor: 'pointer' }}>
                 Skip
               </button>
               {!first && (
                 <button
                   onClick={() => setStep(s => s - 1)}
-                  className="text-xs px-3 py-1.5 rounded-md inline-flex items-center gap-1"
-                  style={{ border: '1px solid var(--rule)', background: 'var(--paper)', cursor: 'pointer' }}
+                  className="btn-ghost px-3 py-2 inline-flex items-center gap-1"
+                  
                 >
                   <ArrowLeft className="size-3" /> Back
                 </button>
               )}
               <button
                 onClick={() => (last ? onClose() : setStep(s => s + 1))}
-                className="text-xs px-3.5 py-1.5 rounded-md inline-flex items-center gap-1.5 font-medium"
-                style={{ background: 'var(--ink)', color: '#fff', border: 0, cursor: 'pointer' }}
+                className="btn-solid px-4 py-2.5 inline-flex items-center gap-1.5"
+                
               >
                 {last ? 'Start' : 'Next'}
                 {!last && <ArrowRight className="size-3" />}

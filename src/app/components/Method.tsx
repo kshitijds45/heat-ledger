@@ -4,9 +4,9 @@ import { DEFAULTS } from '../services/RiskModel';
 import { HISTORY_START, historyEnd, BASELINE, FUTURE, CLIMATE_MODELS, POPULATION_YEAR } from '../services/ClimateData';
 
 const Section: React.FC<{ n: number; title: string; children: React.ReactNode }> = ({ n, title, children }) => (
-  <section className="pt-6 mt-6" style={{ borderTop: '1px solid var(--rule)' }}>
-    <h3 className="text-sm mb-3">
-      <span className="tnum mr-2" style={{ color: 'var(--muted)' }}>{n}.</span>
+  <section className="pt-8 mt-8" style={{ borderTop: '1px solid var(--rule)' }}>
+    <p className="utility mb-3">{String(n).padStart(2, '0')}</p>
+    <h3 className="mb-4" style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 'clamp(24px, 3vw, 36px)', letterSpacing: '-0.015em', lineHeight: 1.05 }}>
       {title}
     </h3>
     {children}
@@ -22,7 +22,7 @@ const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const F: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
     className="text-xs tnum px-3 py-2 rounded-md my-3 leading-relaxed"
-    style={{ background: 'var(--wash)', border: '1px solid var(--rule)', maxWidth: '68ch' }}
+    style={{ background: 'var(--void)', border: '1px solid var(--rule)', maxWidth: '68ch', color: 'var(--ink-soft)' }}
   >
     {children}
   </div>
@@ -32,10 +32,10 @@ const pc = (v: number) => `${Math.round(v * 100)}%`;
 const YEARS = historyEnd() - HISTORY_START + 1;
 
 export const Method: React.FC = () => (
-  <div className="scroll-rail h-full p-4 md:p-8">
-    <div className="max-w-3xl mx-auto pb-16">
-      <h2 className="text-lg">Method and fine print</h2>
-      <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+  <div className="h-full overflow-y-auto p-5 md:p-10">
+    <div className="max-w-3xl mx-auto pb-24 pt-4">
+      <h2 style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 'clamp(38px, 6vw, 76px)', letterSpacing: '-0.02em', lineHeight: 1 }}>Method and fine print</h2>
+      <p className="text-sm mt-4" style={{ color: 'var(--ink-soft)', maxWidth: '62ch', lineHeight: 1.65 }}>
         How {TOOL_NAME} prices heatwave and cold wave cover, where every number comes from and what it
         cannot tell you.
       </p>

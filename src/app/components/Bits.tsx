@@ -9,7 +9,7 @@ export const SectionHead: React.FC<{
   <header>
     <div className="flex items-start justify-between gap-6 flex-wrap">
       <div className="min-w-0">
-        <p className="section-index">{index}</p>
+        <p className="section-index"><span>{index}</span></p>
         <h2 className="section-title">{title}</h2>
       </div>
       {aside && <div className="shrink-0 pt-1">{aside}</div>}
@@ -45,7 +45,7 @@ export const NumberField: React.FC<{
   hint?: string;
 }> = ({ label, value, onChange, step = 1, min, max, suffix, prefix, hint }) => (
   <label className="block">
-    <span className="text-xs block mb-1.5" style={{ color: 'var(--muted)' }}>
+    <span className="utility block mb-2" style={{ fontSize: 9, letterSpacing: '0.14em' }}>
       {label}
     </span>
     <div className="flex items-center gap-1">
@@ -93,11 +93,7 @@ export function Pills<T extends string>({
 }) {
   return (
     <div>
-      {label && (
-        <p className="text-xs mb-1.5" style={{ color: 'var(--muted)' }}>
-          {label}
-        </p>
-      )}
+      {label && <p className="utility mb-3">{label}</p>}
       <div className="pill-select">
         {options.map(([key, text]) => (
           <button
@@ -116,7 +112,7 @@ export function Pills<T extends string>({
 }
 
 export const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-xs leading-relaxed mt-4" style={{ color: 'var(--muted)', maxWidth: '72ch' }}>
+  <p className="text-xs leading-relaxed mt-4" style={{ color: 'var(--muted)', maxWidth: '76ch' }}>
     {children}
   </p>
 );

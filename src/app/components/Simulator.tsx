@@ -134,7 +134,7 @@ export const SimulatorSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="07 / Sensitivity"
         title="Evidence for the choice"
         standfirst="Pick one parameter, sweep it across a range, hold everything else still. This is how a pricing decision gets defended rather than asserted. Each row is a full recalculation across the whole temperature record, so moving a trigger genuinely re-counts every event."
@@ -142,19 +142,19 @@ export const SimulatorSection: React.FC<{
           rows.length > 0 && (
             <button
               onClick={downloadCsv}
-              className="text-xs px-3 py-1.5 rounded-md inline-flex items-center gap-1.5"
-              style={{ border: '1px solid var(--rule)', background: 'var(--paper)', cursor: 'pointer' }}
+              className="btn-ghost px-3 py-2 inline-flex items-center gap-1.5"
+              
             >
               <Download className="size-3" />
               CSV
             </button>
           )
         }
-      />
+      /></div>
 
-      <div className="section-body max-w-5xl">
+      <div className="section-body section-inner">
         <div className="panel panel-pad mb-5">
-          <p className="text-xs mb-2" style={{ color: 'var(--muted)' }}>Parameter to sweep</p>
+          <p className="utility mb-3">Parameter to sweep</p>
           <div className="pill-select mb-4">
             {SPECS.filter(s => {
               if (s.key === 'heatThreshold' && peril === 'cold') return false;

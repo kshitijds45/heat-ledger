@@ -214,65 +214,53 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Toaster position="top-center" />
+      <Toaster position="top-center" theme="dark" />
       <Tour open={tourOpen} onClose={() => { setTourOpen(false); markTourSeen(); }} />
 
-      <header className="topbar shrink-0">
-        <div className="px-3 md:px-6 h-14 flex items-center justify-between gap-3">
-          <button
-            onClick={() => goTo('area')}
-            className="flex items-center gap-2.5 min-w-0"
-            style={{ background: 'transparent', border: 0, cursor: 'pointer', padding: 0 }}
-          >
+      <header className="topbar">
+        <div className="topbar-row">
+          <button onClick={() => goTo('area')} className="wordmark">
             <span
               aria-hidden
-              className="shrink-0 rounded-md"
               style={{
-                width: 22,
-                height: 22,
+                width: 16,
+                height: 16,
+                borderRadius: 1,
                 background: 'linear-gradient(140deg, var(--heat-cool) 0%, var(--heat-mild) 50%, var(--heat-hot) 100%)',
               }}
             />
-            <h1 className="truncate">{TOOL_NAME}</h1>
+            <span className="wordmark-text">{TOOL_NAME}</span>
           </button>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="chip hidden md:inline-flex" style={{ background: 'transparent', color: 'rgba(255,255,255,0.75)', borderColor: 'rgba(255,255,255,0.25)' }}>
-              {locationName}
-            </span>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="utility truncate hidden md:inline">{locationName}</span>
             <div className="seg">
               <button data-active={!showMethod} onClick={() => goTo('area')}>Analysis</button>
               <button data-active={showMethod} onClick={() => setShowMethod(true)}>Method</button>
             </div>
-            <button
-              onClick={() => setTourOpen(true)}
-              aria-label="Open walkthrough"
-              className="p-1.5 rounded-md"
-              style={{ color: 'rgba(255,255,255,0.7)', background: 'transparent', border: 0, cursor: 'pointer' }}
-            >
-              <HelpCircle className="size-4" />
+            <button onClick={() => setTourOpen(true)} aria-label="Open walkthrough" className="icon-btn">
+              <HelpCircle className="size-3.5" />
             </button>
           </div>
         </div>
-
-        {!showMethod && (
-          <nav className="index-bar border-t" style={{ borderColor: 'rgba(255,255,255,0.12)' }}>
-            <div className="px-2 md:px-5 flex">
-              {SECTIONS.map(s => (
-                <button
-                  key={s.id}
-                  className="index-link"
-                  data-active={active === s.id}
-                  onClick={() => goTo(s.id)}
-                >
-                  <span className="idx">{s.index}</span>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </nav>
-        )}
       </header>
+
+      {!showMethod && (
+        <nav className="rail-dots" aria-label="Sections">
+          {SECTIONS.map(sec => (
+            <button
+              key={sec.id}
+              className="rail-dot"
+              data-active={active === sec.id}
+              onClick={() => goTo(sec.id)}
+              aria-label={`${sec.index} ${sec.label}`}
+            >
+              <span className="rail-label">{sec.index} {sec.label}</span>
+              <span className="rail-mark" />
+            </button>
+          ))}
+        </nav>
+      )}
 
       {showMethod ? (
         <main className="flex-1 min-h-0">
@@ -282,7 +270,7 @@ export default function App() {
         <div ref={scrollRef} className="snap-scroll flex-1 min-h-0">
           {/* 01 Area */}
           <section id="area" className="snap-section">
-            <div className="relative flex-1 min-h-[70vh]">
+            <div className="map-panel">
               <div className="absolute top-3 left-3 right-3 z-[1000] flex gap-2 items-start">
                 <div className="flex-1 max-w-md">
                   <LocationSearch onLocationSelect={handleSearch} />
@@ -292,8 +280,8 @@ export default function App() {
                     <button
                       onClick={draw.start}
                       disabled={draw.drawing}
-                      className="text-xs font-medium px-3 h-9 rounded-md inline-flex items-center gap-2 shadow-lg disabled:opacity-60 shrink-0"
-                      style={{ background: 'var(--ink)', color: '#fff', border: 0, cursor: 'pointer' }}
+                      className="btn-solid px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
+                      
                     >
                       <Square className="size-3.5" />
                       <span className="hidden sm:inline">{draw.drawing ? 'Drawing' : 'Draw area'}</span>
@@ -301,8 +289,8 @@ export default function App() {
                     {isCustomArea && (
                       <button
                         onClick={clearArea}
-                        className="text-xs font-medium px-3 h-9 rounded-md inline-flex items-center gap-2 shadow-lg shrink-0"
-                        style={{ background: 'var(--paper)', color: 'var(--ink)', border: '1px solid var(--rule)', cursor: 'pointer' }}
+                        className="btn-ghost px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
+                        
                       >
                         <RotateCcw className="size-3.5" />
                         <span className="hidden sm:inline">Clear</span>
@@ -321,19 +309,27 @@ export default function App() {
               />
 
               {!mapReady && (
-                <div className="absolute inset-0 flex items-center justify-center z-[1001]" style={{ background: 'rgba(255,255,255,0.85)' }}>
-                  <div className="size-7 rounded-full animate-spin" style={{ border: '3px solid var(--wash-deep)', borderTopColor: 'var(--ink)' }} />
+                <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--void)' }}>
+                  <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--heat-warm)' }} />
                 </div>
               )}
 
-              <button
-                onClick={() => goTo('product')}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] text-xs font-medium px-4 py-2.5 rounded-full inline-flex items-center gap-2 shadow-lg"
-                style={{ background: 'var(--ink)', color: '#fff', border: 0, cursor: 'pointer' }}
-              >
-                Price this area
-                <ArrowDown className="size-3.5" />
-              </button>
+              <div className="map-veil" />
+
+              <div className="title-card">
+                <p className="utility mb-3">01 / Area · {startYear} to {endYear} record</p>
+                <h2 className="lede">Heat and cold, priced.</h2>
+                <div className="flex items-end justify-between gap-6 mt-7 flex-wrap" style={{ pointerEvents: 'auto' }}>
+                  <p className="text-sm max-w-md" style={{ color: 'var(--ink-soft)', lineHeight: 1.65 }}>
+                    Parametric cover for heatwaves and cold waves, built from thirty five years of
+                    public climate data. Search a city or draw an area to price it.
+                  </p>
+                  <button onClick={() => goTo('product')} className="btn-solid px-5 py-3 inline-flex items-center gap-2">
+                    Price this area
+                    <ArrowDown className="size-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
 

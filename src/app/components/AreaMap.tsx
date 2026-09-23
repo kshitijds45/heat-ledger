@@ -39,10 +39,13 @@ export const AreaMap: React.FC<AreaMapProps> = ({
       const leaflet = (await import('leaflet')).default;
       if (cancelled || !containerRef.current || mapRef.current) return;
       const m = leaflet.map(containerRef.current, { zoomControl: true });
+      // CARTO's dark basemap, free for this use with attribution, so the map
+      // belongs to the page rather than sitting on it as a bright rectangle.
       leaflet
-        .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 18,
+        .tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          attribution: '© OpenStreetMap contributors © CARTO',
+          subdomains: 'abcd',
+          maxZoom: 19,
         })
         .addTo(m);
       m.fitBounds([
@@ -72,15 +75,15 @@ export const AreaMap: React.FC<AreaMapProps> = ({
         [area.south, area.west],
         [area.north, area.east],
       ],
-      { color: '#16202c', weight: 2, fillColor: '#ff4500', fillOpacity: 0.08, dashArray: '6 4' }
+      { color: '#f4f1ea', weight: 1, fillColor: '#ff7a45', fillOpacity: 0.07, dashArray: '2 5' }
     ).addTo(map);
 
     const c = centreOf(area);
     pinRef.current = L.circleMarker([c.lat, c.lon], {
-      radius: 7,
-      color: '#fff',
+      radius: 6,
+      color: '#08090b',
       weight: 2,
-      fillColor: '#16202c',
+      fillColor: '#ff7a45',
       fillOpacity: 1,
     })
       .bindTooltip('Index point: every policy in this area pays on the temperature here', {
@@ -123,7 +126,7 @@ export const AreaMap: React.FC<AreaMapProps> = ({
     };
     const down = (e: any) => {
       start = e.latlng;
-      temp = L.rectangle([start, start], { color: '#ff4500', weight: 2, fillOpacity: 0.1 }).addTo(map);
+      temp = L.rectangle([start, start], { color: '#ff7a45', weight: 1, fillOpacity: 0.12 }).addTo(map);
     };
     const move = (e: any) => {
       if (start && temp) temp.setBounds([start, e.latlng]);
@@ -159,10 +162,6 @@ export const AreaMap: React.FC<AreaMapProps> = ({
   return (
     <div className="relative size-full">
       <div ref={containerRef} className="size-full" />
-      <style>{`
-        .leaflet-container { width: 100%; height: 100%; z-index: 0; font-family: inherit; }
-        .leaflet-pane, .leaflet-top, .leaflet-bottom { z-index: 400 !important; }
-      `}</style>
     </div>
   );
 };

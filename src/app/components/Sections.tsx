@@ -15,8 +15,8 @@ import { POPULATION_YEAR, BASELINE, FUTURE } from '../services/ClimateData';
 
 export type Peril = 'heat' | 'cold' | 'both';
 
-const HEAT = '#ff4500';
-const COLD = '#4169e1';
+const HEAT = '#ff7a45';
+const COLD = '#7fa6ff';
 
 export const perilLabel: Record<Peril, string> = {
   heat: 'Heat only',
@@ -48,7 +48,7 @@ export const ProductSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="02 / The product"
         title="What is being sold"
         standfirst="A fixed sum paid when a temperature index crosses a line. No claim, no inspection, no loss adjuster. The defaults are official UK definitions, and everything here is yours to change."
@@ -56,16 +56,16 @@ export const ProductSection: React.FC<{
           !isDefault && (
             <button
               onClick={onReset}
-              className="text-xs px-3 py-1.5 rounded-md"
-              style={{ border: '1px solid var(--rule)', background: 'var(--paper)', cursor: 'pointer' }}
+              className="btn-ghost px-3 py-2"
+              
             >
               Reset to defaults
             </button>
           )
         }
-      />
+      /></div>
 
-      <div className="section-body grid gap-5 lg:grid-cols-2 max-w-5xl">
+      <div className="section-body section-inner grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <div className="panel panel-pad space-y-4">
           <Pills
             label="Cover written"
@@ -80,7 +80,7 @@ export const ProductSection: React.FC<{
 
           {peril !== 'cold' && (
             <div className="hairline pt-4">
-              <p className="text-sm mb-2.5" style={{ fontFamily: 'Archivo', fontWeight: 600 }}>
+              <p className="utility mb-3">
                 Heatwave trigger
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -93,7 +93,7 @@ export const ProductSection: React.FC<{
 
           {peril !== 'heat' && (
             <div className="hairline pt-4">
-              <p className="text-sm mb-2.5" style={{ fontFamily: 'Archivo', fontWeight: 600 }}>
+              <p className="utility mb-3">
                 Cold wave trigger
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -107,14 +107,14 @@ export const ProductSection: React.FC<{
 
         <div className="panel panel-pad space-y-4">
           <div>
-            <p className="text-sm mb-2.5" style={{ fontFamily: 'Archivo', fontWeight: 600 }}>
+            <p className="utility mb-3">
               Cover and uptake
             </p>
             <div className="grid grid-cols-3 gap-3">
               <NumberField label="Payout per event" value={a.payoutPerEvent} onChange={v => set({ payoutPerEvent: Math.max(1, v) })} prefix={currency.symbol} min={1} />
               <NumberField label="Max events a year" value={a.annualLimit} onChange={v => set({ annualLimit: Math.max(1, Math.round(v)) })} min={1} max={20} />
               <label className="block">
-                <span className="text-xs block mb-1.5" style={{ color: 'var(--muted)' }}>Currency</span>
+                <span className="utility block mb-2" style={{ fontSize: 9, letterSpacing: '0.14em' }}>Currency</span>
                 <select
                   value={currency.code}
                   onChange={e => onCurrencyChange(e.target.value)}
@@ -133,7 +133,7 @@ export const ProductSection: React.FC<{
           </div>
 
           <div className="hairline pt-4">
-            <p className="text-sm mb-2.5" style={{ fontFamily: 'Archivo', fontWeight: 600 }}>
+            <p className="utility mb-3">
               Pricing target
             </p>
             <div className="grid grid-cols-3 gap-3">
@@ -155,7 +155,7 @@ export const ProductSection: React.FC<{
           </div>
 
           <div className="hairline pt-4">
-            <p className="text-sm mb-2.5" style={{ fontFamily: 'Archivo', fontWeight: 600 }}>
+            <p className="utility mb-3">
               Volume discount, optional
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -223,13 +223,13 @@ export const RiskSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="03 / The hazard"
         title="How often it fires"
         standfirst={`Every qualifying event at this location since ${startYear}, counted from ECMWF reanalysis. The chart is the record as it happened. The pricing uses a version adjusted to today's climate, because the early years were cooler and would otherwise drag the price down.`}
-      />
+      /></div>
 
-      <div className="section-body max-w-5xl">
+      <div className="section-body section-inner">
         {loading && (
           <div className="panel panel-pad flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             <Loader2 className="size-4 animate-spin" />
@@ -275,10 +275,10 @@ export const RiskSection: React.FC<{
               <div className="h-56 -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                    <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#5a6876' }} tickLine={false} axisLine={{ stroke: '#d3dae2' }} interval={3} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#5a6876' }} tickLine={false} axisLine={false} width={26} />
-                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, borderColor: '#d3dae2' }} cursor={{ fill: 'rgba(22,32,44,0.05)' }} />
-                    <Legend iconSize={9} wrapperStyle={{ fontSize: 12 }} />
+                    <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'rgba(244,241,234,0.48)' }} tickLine={false} axisLine={{ stroke: 'rgba(244,241,234,0.2)' }} interval={3} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'rgba(244,241,234,0.48)' }} tickLine={false} axisLine={false} width={26} />
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 3, background: '#121519', borderColor: 'rgba(244,241,234,0.2)', color: '#f4f1ea' }} itemStyle={{ color: '#f4f1ea' }} labelStyle={{ color: 'rgba(244,241,234,0.6)' }} cursor={{ fill: 'rgba(244,241,234,0.05)' }} />
+                    <Legend iconSize={9} wrapperStyle={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' }} />
                     {showHeat && <Bar dataKey="Heat" fill={HEAT} radius={[2, 2, 0, 0]} />}
                     {showCold && <Bar dataKey="Cold" fill={COLD} radius={[2, 2, 0, 0]} />}
                   </BarChart>
@@ -310,7 +310,17 @@ export const PriceSection: React.FC<{
   a: Assumptions;
   currency: Currency;
 }> = ({ result, peril, a, currency }) => {
-  if (!result) return <><SectionHead index="04 / The price" title="What it costs" /><div className="section-body max-w-5xl"><Empty>Waiting for the temperature record.</Empty></div></>;
+  if (!result)
+    return (
+      <>
+        <div className="section-inner">
+          <SectionHead index="04 / The price" title="What it costs" />
+        </div>
+        <div className="section-body section-inner">
+          <Empty>Waiting for the temperature record.</Empty>
+        </div>
+      </>
+    );
 
   const showHeat = peril !== 'cold';
   const showCold = peril !== 'heat';
@@ -334,13 +344,13 @@ export const PriceSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="04 / The price"
         title="What it costs"
         standfirst={`Premium solved so claims and expenses together take ${pct(a.targetCombinedRatio)} of it. The rest is margin. The capital line is what must be held to survive a year worse than 199 out of 200.`}
-      />
+      /></div>
 
-      <div className="section-body max-w-5xl">
+      <div className="section-body section-inner">
         <div className="figure-grid cols-4 mb-5">
           <Figure label="Annual premium per policy" value={sel.priceable ? money(sel.premium, currency) : '-'} note={perilLabel[peril]} />
           <Figure label="Loss ratio" value={sel.priceable ? pct(sel.lossRatio) : '-'} note="FCA: 54% motor, 46% home, 4% GAP add-on" />
@@ -421,13 +431,13 @@ export const OutlookSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="05 / The outlook"
         title={`Repriced on ${FUTURE.start} to ${FUTURE.end} climate`}
         standfirst={`Pricing a one-year contract does not need this. Deciding whether to launch the product does. Each climate model is compared against its own ${BASELINE.start} to ${BASELINE.end} baseline, so model bias cancels and only the change carries through.`}
-      />
+      /></div>
 
-      <div className="section-body max-w-5xl">
+      <div className="section-body section-inner">
         {loading && (
           <div className="panel panel-pad flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             <Loader2 className="size-4 animate-spin" />
@@ -522,13 +532,13 @@ export const PortfolioSection: React.FC<{
 
   return (
     <>
-      <SectionHead
+      <div className="section-inner"><SectionHead
         index="06 / The portfolio"
         title="What a book of this looks like"
         standfirst="Every policy in the area pays on the same reading, so they all trigger together. There is no diversification inside an area. A hundred thousand policies are one risk, a hundred thousand times over."
-      />
+      /></div>
 
-      <div className="section-body max-w-5xl">
+      <div className="section-body section-inner">
         {loading && (
           <div className="panel panel-pad flex items-center gap-2 text-sm" style={{ color: 'var(--muted)' }}>
             <Loader2 className="size-4 animate-spin" />
@@ -557,8 +567,8 @@ export const PortfolioSection: React.FC<{
                   const v = parseFloat(manual);
                   if (isFinite(v) && v > 0) onManualPopulation(Math.round(v));
                 }}
-                className="text-sm px-4 py-2 rounded-md font-medium"
-                style={{ background: 'var(--ink)', color: '#fff', border: 0, cursor: 'pointer' }}
+                className="btn-solid px-4 py-2.5"
+                
               >
                 Use
               </button>

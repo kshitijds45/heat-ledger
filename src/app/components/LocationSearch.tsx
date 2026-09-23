@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
 
 export interface SearchBounds {
   north: number;
@@ -145,26 +143,27 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
             onKeyDown={handleKeyDown}
             onFocus={() => searchResults.length > 0 && setShowResults(true)}
             onBlur={() => setTimeout(() => setShowResults(false), 150)}
-            className="pl-10 bg-white shadow-lg border-2"
+            className="pl-10 h-9 text-sm"
+            style={{ background: 'var(--void)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
           />
         </div>
-        <Button onClick={() => runSearch(searchQuery)} disabled={isSearching} className="shadow-lg">
+        <button onClick={() => runSearch(searchQuery)} disabled={isSearching} className="btn-solid px-4 h-9 inline-flex items-center gap-2">
           {isSearching ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             'Search'
           )}
-        </Button>
+        </button>
       </div>
 
       {showResults && searchResults.length > 0 && (
-        <Card className="absolute mt-2 w-full max-h-80 overflow-y-auto bg-white shadow-xl border-2 z-10">
+        <div className="panel absolute mt-2 w-full max-h-80 overflow-y-auto z-10">
           <div className="p-2">
             {searchResults.map((result, index) => (
               <button
                 key={index}
                 onMouseDown={() => handleSelectResult(result)}
-                className="w-full text-left p-3 hover:bg-accent rounded-md transition-colors flex items-start gap-2"
+                className="w-full text-left p-3 rounded-sm transition-colors flex items-start gap-2 hover:bg-[rgba(244,241,234,0.06)]"
               >
                 <MapPin className="size-4 mt-1 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">
@@ -173,16 +172,16 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
               </button>
             ))}
           </div>
-        </Card>
+        </div>
       )}
 
       {showResults && isSearching && (
-        <Card className="absolute mt-2 w-full bg-white shadow-xl border-2 z-10">
+        <div className="panel absolute mt-2 w-full z-10">
           <div className="p-4 flex items-center gap-2 text-muted-foreground text-sm">
             <Loader2 className="size-4 animate-spin" />
             Searching...
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );
