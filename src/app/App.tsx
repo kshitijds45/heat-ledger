@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Square, HelpCircle, RotateCcw, ArrowDown } from 'lucide-react';
+import { Square, HelpCircle, RotateCcw } from 'lucide-react';
 import { Toaster } from './components/ui/sonner';
 import { AreaMap } from './components/AreaMap';
 import { LocationSearch, SearchBounds } from './components/LocationSearch';
@@ -36,13 +36,12 @@ const LONDON: { name: string; area: Bounds } = {
 };
 
 const SECTIONS = [
-  { id: 'area', index: '01', label: 'Area' },
-  { id: 'product', index: '02', label: 'Product' },
-  { id: 'hazard', index: '03', label: 'Hazard' },
-  { id: 'price', index: '04', label: 'Price' },
-  { id: 'outlook', index: '05', label: 'Outlook' },
-  { id: 'portfolio', index: '06', label: 'Portfolio' },
-  { id: 'sensitivity', index: '07', label: 'Sensitivity' },
+  { id: 'product', index: '01', label: 'Product' },
+  { id: 'hazard', index: '02', label: 'Hazard' },
+  { id: 'price', index: '03', label: 'Price' },
+  { id: 'outlook', index: '04', label: 'Outlook' },
+  { id: 'portfolio', index: '05', label: 'Portfolio' },
+  { id: 'sensitivity', index: '06', label: 'Sensitivity' },
 ];
 
 const sameAssumptions = (a: Assumptions, b: Assumptions) =>
@@ -76,7 +75,7 @@ export default function App() {
   const [popLoading, setPopLoading] = useState(false);
   const [popError, setPopError] = useState<string | null>(null);
 
-  const [active, setActive] = useState('area');
+  const [active, setActive] = useState('product');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -187,10 +186,10 @@ export default function App() {
           .sort((x, y) => y.intersectionRatio - x.intersectionRatio)[0];
         if (visible?.target.id) setActive(visible.target.id);
       },
-      { root, threshold: [0.25, 0.5, 0.75] }
+      { root, rootMargin: '-20% 0px -60% 0px', threshold: [0, 0.2, 0.6] }
     );
-    SECTIONS.forEach(s => {
-      const el = document.getElementById(s.id);
+    SECTIONS.forEach(sec => {
+      const el = document.getElementById(sec.id);
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
@@ -203,6 +202,11 @@ export default function App() {
     });
   }, []);
 
+  const backToTop = useCallback(() => {
+    setShowMethod(false);
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
+  }, []);
+
   const afterAreaChange = (b: Bounds, name: string, custom: boolean) => {
     setArea(b);
     setLocationName(name);
@@ -210,7 +214,8 @@ export default function App() {
     setFitToken(t => t + 1);
     loadArea(b);
     // The map has done its job, so move the journey on to the analysis.
-    setTimeout(() => goTo('product'), 350);
+    // The map stays put. Only the reading column returns to the top.
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   const handleSearch = (lat: number, lon: number, name: string, b: SearchBounds) =>
@@ -234,7 +239,7 @@ export default function App() {
 
       <header className="topbar">
         <div className="topbar-row">
-          <button onClick={() => goTo('area')} className="wordmark">
+          <button onClick={backToTop} className="wordmark">
             <span
               aria-hidden
               style={{
@@ -250,7 +255,7 @@ export default function App() {
           <div className="flex items-center gap-3 min-w-0">
             <span className="utility truncate hidden md:inline">{locationName}</span>
             <div className="seg">
-              <button data-active={!showMethod} onClick={() => goTo('area')}>Analysis</button>
+              <button data-active={!showMethod} onClick={backToTop}>Analysis</button>
               <button data-active={showMethod} onClick={() => setShowMethod(true)}>Method</button>
             </div>
             <button onClick={() => setTourOpen(true)} aria-label="Open walkthrough" className="icon-btn">
@@ -260,172 +265,154 @@ export default function App() {
         </div>
       </header>
 
-      {!showMethod && (
-        <nav className="rail-dots" aria-label="Sections">
-          {SECTIONS.map(sec => (
-            <button
-              key={sec.id}
-              className="rail-dot"
-              data-active={active === sec.id}
-              onClick={() => goTo(sec.id)}
-              aria-label={`${sec.index} ${sec.label}`}
-            >
-              <span className="rail-label">{sec.index} {sec.label}</span>
-              <span className="rail-mark" />
-            </button>
-          ))}
-        </nav>
-      )}
-
       {showMethod ? (
         <main className="flex-1 min-h-0">
           <Method />
         </main>
       ) : (
-        <div ref={scrollRef} className="snap-scroll flex-1 min-h-0">
-          {/* 01 Area */}
-          <section id="area" className="snap-section">
-            <div className="map-panel">
-              <div className="absolute top-3 left-3 right-3 z-[1000] flex gap-2 items-start">
-                <div className="flex-1 max-w-md">
-                  <LocationSearch onLocationSelect={handleSearch} />
-                </div>
-                {draw && (
-                  <>
-                    <button
-                      onClick={draw.start}
-                      disabled={draw.drawing}
-                      className="btn-solid px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
-                      
-                    >
-                      <Square className="size-3.5" />
-                      <span className="hidden sm:inline">{draw.drawing ? 'Drawing' : 'Draw area'}</span>
-                    </button>
-                    {isCustomArea && (
-                      <button
-                        onClick={clearArea}
-                        className="btn-ghost px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
-                        
-                      >
-                        <RotateCcw className="size-3.5" />
-                        <span className="hidden sm:inline">Clear</span>
-                      </button>
-                    )}
-                  </>
-                )}
+        <div className="workspace">
+          {/* Map, always on screen */}
+          <div className="map-pane">
+            <div className="absolute top-3 left-3 right-3 z-[1000] flex gap-2 items-start">
+              <div className="flex-1 min-w-0">
+                <LocationSearch onLocationSelect={handleSearch} />
               </div>
-
-              <AreaMap
-                area={area}
-                fitToken={fitToken}
-                onAreaDrawn={handleDrawn}
-                onReady={() => setMapReady(true)}
-                onDrawControl={(start, drawing) => setDraw({ start, drawing })}
-              />
-
-              {!mapReady && (
-                <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--wash)' }}>
-                  <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--heat-warm)' }} />
-                </div>
-              )}
-
-              <div className="map-veil" />
-
-              <div className="title-card">
-                <p className="utility mb-3">01 / Area · {startYear} to {endYear} record</p>
-                <h2 className="lede">Heat and cold, priced.</h2>
-                <div className="flex items-end justify-between gap-6 mt-7 flex-wrap" style={{ pointerEvents: 'auto' }}>
-                  <p className="text-sm max-w-md" style={{ color: 'var(--ink-soft)', lineHeight: 1.65 }}>
-                    Parametric cover for heatwaves and cold waves, built from thirty five years of
-                    public climate data. Search a city or draw an area to price it.
-                  </p>
-                  <button onClick={() => goTo('product')} className="btn-solid px-5 py-3 inline-flex items-center gap-2">
-                    Price this area
-                    <ArrowDown className="size-3.5" />
+              {draw && (
+                <>
+                  <button
+                    onClick={draw.start}
+                    disabled={draw.drawing}
+                    className="btn-solid px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
+                  >
+                    <Square className="size-3.5" />
+                    <span className="hidden sm:inline">{draw.drawing ? 'Drawing' : 'Draw area'}</span>
                   </button>
-                </div>
-              </div>
+                  {isCustomArea && (
+                    <button
+                      onClick={clearArea}
+                      className="btn-ghost px-3.5 h-9 inline-flex items-center gap-2 shrink-0"
+                      style={{ background: 'var(--paper)' }}
+                    >
+                      <RotateCcw className="size-3.5" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-          </section>
 
-          {/* 02 Product */}
-          <section id="product" className="snap-section">
-            <ProductSection
-              a={assumptions}
-              onChange={setAssumptions}
-              onReset={() => setAssumptions(DEFAULTS)}
-              isDefault={sameAssumptions(assumptions, DEFAULTS)}
-              peril={peril}
-              onPerilChange={setPeril}
-              currency={currency}
-              onCurrencyChange={setCurrencyCode}
-              book={book}
+            <AreaMap
+              area={area}
+              fitToken={fitToken}
+              onAreaDrawn={handleDrawn}
+              onReady={() => setMapReady(true)}
+              onDrawControl={(start, drawing) => setDraw({ start, drawing })}
             />
-          </section>
 
-          {/* 03 Hazard */}
-          <section id="hazard" className="snap-section">
-            <RiskSection
-              result={result}
-              loading={historyLoading}
-              error={historyError}
-              peril={peril}
-              startYear={startYear}
-              endYear={endYear}
-            />
-          </section>
-
-          {/* 04 Price */}
-          <section id="price" className="snap-section">
-            <PriceSection result={result} peril={peril} a={assumptions} currency={currency} />
-          </section>
-
-          {/* 05 Outlook */}
-          <section id="outlook" className="snap-section">
-            <OutlookSection
-              result={result}
-              projection={projection}
-              loading={projLoading}
-              error={projError}
-              peril={peril}
-              currency={currency}
-              onRun={runProjection}
-              hasRun={models !== null}
-            />
-          </section>
-
-          {/* 06 Portfolio */}
-          <section id="portfolio" className="snap-section">
-            <PortfolioSection
-              result={result}
-              peril={peril}
-              a={assumptions}
-              currency={currency}
-              population={population}
-              policies={policies}
-              loading={popLoading}
-              error={popError}
-              onManualPopulation={n => { setPopulation(n); setPopError(null); }}
-            />
-          </section>
-
-          {/* 07 Sensitivity */}
-          <section id="sensitivity" className="snap-section">
-            <SimulatorSection
-              history={history}
-              a={assumptions}
-              peril={peril}
-              currency={currency}
-              population={population}
-              startYear={startYear}
-              endYear={endYear}
-            />
-            <footer className="mt-10 pt-5" style={{ borderTop: '1px solid var(--rule)' }}>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>
-                {TOOL_NAME} · Built by {CREATOR} · Index point {index.lat.toFixed(3)}, {index.lon.toFixed(3)}
+            <div
+              className="absolute bottom-0 left-0 right-0 z-[600] px-4 py-3 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to top, rgba(244,242,237,0.96) 0%, rgba(244,242,237,0) 100%)',
+              }}
+            >
+              <p className="utility">{locationName}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
+                Index point {index.lat.toFixed(3)}, {index.lon.toFixed(3)} · {startYear} to {endYear}
               </p>
-            </footer>
-          </section>
+            </div>
+
+            {!mapReady && (
+              <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--wash)' }}>
+                <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--heat-warm)' }} />
+              </div>
+            )}
+          </div>
+
+          {/* Analysis, scrolling normally beside it */}
+          <div ref={scrollRef} className="content-pane">
+            <nav className="doc-nav" aria-label="Sections">
+              {SECTIONS.map(sec => (
+                <button
+                  key={sec.id}
+                  data-active={active === sec.id}
+                  onClick={() => goTo(sec.id)}
+                >
+                  {sec.index} {sec.label}
+                </button>
+              ))}
+            </nav>
+
+            <section id="product" className="doc-section">
+              <ProductSection
+                a={assumptions}
+                onChange={setAssumptions}
+                onReset={() => setAssumptions(DEFAULTS)}
+                isDefault={sameAssumptions(assumptions, DEFAULTS)}
+                peril={peril}
+                onPerilChange={setPeril}
+                currency={currency}
+                onCurrencyChange={setCurrencyCode}
+                book={book}
+              />
+            </section>
+
+            <section id="hazard" className="doc-section">
+              <RiskSection
+                result={result}
+                loading={historyLoading}
+                error={historyError}
+                peril={peril}
+                startYear={startYear}
+                endYear={endYear}
+              />
+            </section>
+
+            <section id="price" className="doc-section">
+              <PriceSection result={result} peril={peril} a={assumptions} currency={currency} />
+            </section>
+
+            <section id="outlook" className="doc-section">
+              <OutlookSection
+                result={result}
+                projection={projection}
+                loading={projLoading}
+                error={projError}
+                peril={peril}
+                currency={currency}
+                onRun={runProjection}
+                hasRun={models !== null}
+              />
+            </section>
+
+            <section id="portfolio" className="doc-section">
+              <PortfolioSection
+                result={result}
+                peril={peril}
+                a={assumptions}
+                currency={currency}
+                population={population}
+                policies={policies}
+                loading={popLoading}
+                error={popError}
+                onManualPopulation={n => { setPopulation(n); setPopError(null); }}
+              />
+            </section>
+
+            <section id="sensitivity" className="doc-section">
+              <SimulatorSection
+                history={history}
+                a={assumptions}
+                peril={peril}
+                currency={currency}
+                population={population}
+                startYear={startYear}
+                endYear={endYear}
+              />
+              <footer className="mt-12 pt-5" style={{ borderTop: '1px solid var(--rule)' }}>
+                <p className="utility">{TOOL_NAME} · Built by {CREATOR}</p>
+              </footer>
+            </section>
+          </div>
         </div>
       )}
     </div>

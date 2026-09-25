@@ -45,7 +45,6 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  overscroll-behavior: none;
 }
 
 body {
@@ -198,145 +197,131 @@ select {
 }
 
 /* ---------------------------------------------------------------------------
-   Slide mechanics
+   Two pane layout. The map stays on screen at all times and the analysis
+   scrolls beside it, which is far less jarring than locking whole viewports.
    --------------------------------------------------------------------------- */
 
-.snap-scroll {
+.workspace {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
-  overscroll-behavior-y: contain;
-  scrollbar-width: none;
-}
-
-.snap-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.snap-section {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  height: 100%;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 34px 18px 34px;
-  scrollbar-width: none;
-  position: relative;
 }
 
-.snap-section::-webkit-scrollbar {
+@media (min-width: 1000px) {
+  .workspace {
+    flex-direction: row;
+  }
+}
+
+.map-pane {
+  position: relative;
+  height: 42vh;
+  min-height: 280px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--rule);
+  background: var(--wash-deep);
+}
+
+@media (min-width: 1000px) {
+  .map-pane {
+    height: auto;
+    width: 44%;
+    max-width: 780px;
+    min-width: 360px;
+    border-bottom: 0;
+    border-right: 1px solid var(--rule);
+  }
+}
+
+.content-pane {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  background: var(--wash);
+}
+
+.content-pane::-webkit-scrollbar {
+  width: 10px;
+}
+
+.content-pane::-webkit-scrollbar-thumb {
+  background: var(--wash-deep);
+  border-radius: 999px;
+}
+
+/* Sticky section nav inside the scrolling column */
+.doc-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  gap: 2px;
+  padding: 10px 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(244, 242, 237, 0.93);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.doc-nav::-webkit-scrollbar {
   display: none;
 }
 
-.snap-section:first-child {
-  padding: 0;
+@media (min-width: 1000px) {
+  .doc-nav {
+    padding: 10px 30px;
+  }
 }
 
-@media (min-width: 900px) {
-  .snap-section {
-    padding: 44px 28px 44px 28px;
+.doc-nav button {
+  flex-shrink: 0;
+  font-family: var(--utility);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.doc-nav button:hover {
+  color: var(--ink);
+}
+
+.doc-nav button[data-active='true'] {
+  color: var(--ink);
+  background: rgba(21, 23, 27, 0.07);
+}
+
+.doc-section {
+  padding: 44px 18px 48px;
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: 44px;
+}
+
+.doc-section:first-of-type {
+  border-top: 0;
+}
+
+@media (min-width: 1000px) {
+  .doc-section {
+    padding: 52px 30px 56px;
   }
 }
 
 .section-inner {
   width: 100%;
-  max-width: 1560px;
-  margin: 0 auto;
-}
-
-/* ---------------------------------------------------------------------------
-   Pagination rail
-   --------------------------------------------------------------------------- */
-
-.rail-dots {
-  position: fixed;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-@media (min-width: 900px) {
-  .rail-dots {
-    right: 22px;
-    gap: 4px;
-  }
-}
-
-.rail-dot {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  background: none;
-  border: 0;
-  padding: 7px 0 7px 14px;
-  cursor: pointer;
-  color: var(--muted);
-}
-
-.rail-dot .rail-label {
-  font-family: var(--utility);
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  opacity: 0;
-  transform: translateX(6px);
-  transition: opacity 240ms ease, transform 240ms ease;
-  white-space: nowrap;
-}
-
-.rail-dot:hover .rail-label,
-.rail-dot[data-active='true'] .rail-label {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-.rail-dot[data-active='true'] {
-  color: var(--ink);
-}
-
-.rail-mark {
-  display: block;
-  width: 18px;
-  height: 1px;
-  background: var(--rule-strong);
-  transition: width 260ms cubic-bezier(0.22, 1, 0.36, 1), background 260ms ease;
-}
-
-.rail-dot:hover .rail-mark {
-  background: var(--ink-soft);
-}
-
-.rail-dot[data-active='true'] .rail-mark {
-  width: 34px;
-  background: var(--heat-warm);
-}
-
-@media (max-width: 560px) {
-  .rail-dots {
-    right: 8px;
-  }
-  .rail-dot {
-    padding: 6px 0 6px 8px;
-  }
-  .rail-dot .rail-label {
-    display: none;
-  }
-  .rail-mark {
-    width: 12px;
-  }
-  .rail-dot[data-active='true'] .rail-mark {
-    width: 22px;
-  }
+  max-width: 1100px;
 }
 
 /* ---------------------------------------------------------------------------
@@ -368,7 +353,7 @@ select {
   font-weight: 500;
   letter-spacing: -0.018em;
   line-height: 0.98;
-  font-size: clamp(34px, 4.6vw, 64px);
+  font-size: clamp(30px, 3.4vw, 46px);
   margin: 14px 0 0;
   color: var(--ink);
 }
@@ -461,7 +446,7 @@ select {
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1;
-  font-size: clamp(26px, 2.8vw, 38px);
+  font-size: clamp(24px, 2.4vw, 32px);
   margin-top: 12px;
   color: var(--ink);
 }
@@ -670,50 +655,6 @@ a:focus-visible {
 .recharts-default-legend,
 .recharts-tooltip-wrapper {
   font-family: var(--utility) !important;
-}
-
-.map-panel {
-  position: relative;
-  height: 100%;
-  min-height: 340px;
-  flex: 1 0 auto;
-}
-
-/* A slow vignette so the first slide reads as a title card, not a widget. */
-.map-veil {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 500;
-  background:
-    linear-gradient(to bottom, rgba(244, 242, 237, 0.92) 0%, rgba(244, 242, 237, 0) 26%),
-    linear-gradient(to top, rgba(244, 242, 237, 0.97) 0%, rgba(244, 242, 237, 0.82) 30%, rgba(244, 242, 237, 0) 58%);
-}
-
-.title-card {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 600;
-  padding: 0 18px 30px;
-  pointer-events: none;
-}
-
-@media (min-width: 900px) {
-  .title-card {
-    padding: 0 28px 44px;
-  }
-}
-
-.title-card .lede {
-  font-family: var(--display);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 0.94;
-  font-size: clamp(38px, 6.2vw, 86px);
-  color: var(--ink);
-  max-width: 16ch;
 }
 
 @media (prefers-reduced-motion: reduce) {

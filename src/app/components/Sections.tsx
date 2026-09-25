@@ -65,7 +65,7 @@ export const ProductSection: React.FC<{
         }
       /></div>
 
-      <div className="section-body section-inner grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="section-body section-inner grid gap-4 xl:grid-cols-2">
         <div className="panel panel-pad space-y-4">
           <Pills
             label="Cover written"
@@ -242,7 +242,7 @@ export const RiskSection: React.FC<{
 
         {result && !loading && (
           <>
-            <div className="figure-grid cols-4 mb-5">
+            <div className="figure-grid cols-3 mb-4">
               {showHeat && (
                 <Figure
                   label="Heat events a year, as recorded"
@@ -351,7 +351,7 @@ export const PriceSection: React.FC<{
       /></div>
 
       <div className="section-body section-inner">
-        <div className="figure-grid cols-4 mb-5">
+        <div className="figure-grid cols-3 mb-4">
           <Figure label="Annual premium per policy" value={sel.priceable ? money(sel.premium, currency) : '-'} note={perilLabel[peril]} />
           <Figure label="Loss ratio" value={sel.priceable ? pct(sel.lossRatio) : '-'} note="FCA: 54% motor, 46% home, 4% GAP add-on" />
           <Figure label="1-in-200 year payout" value={sel.priceable ? money(sel.tailPayout, currency, 0) : '-'} note="Per policy, worst year in two hundred" />
@@ -472,7 +472,7 @@ export const OutlookSection: React.FC<{
 
         {projection && result && !loading && (
           <>
-            <div className="figure-grid cols-3 mb-5">
+            <div className="figure-grid cols-3 mb-4">
               <Figure
                 label="Premium today"
                 value={now?.priceable ? money(now.premium, currency) : '-'}
@@ -602,7 +602,7 @@ export const PortfolioSection: React.FC<{
 
         {!loading && population !== null && sel && (
           <>
-            <div className="figure-grid cols-3 mb-5">
+            <div className="figure-grid cols-3 mb-4">
               <Figure label="Population in the area" value={count(population, currency)} note={`WorldPop ${POPULATION_YEAR} estimate`} />
               <Figure label="Policies in force" value={count(n, currency)} note={`${pct(a.adoption, a.adoption < 0.01 ? 2 : 1)} adoption`} />
               <Figure label="Premium income" value={sel.priceable ? moneyShort(n * sel.premium, currency) : '-'} note="Gross written, one year" />
