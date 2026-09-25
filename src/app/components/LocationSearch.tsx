@@ -144,7 +144,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
             onFocus={() => searchResults.length > 0 && setShowResults(true)}
             onBlur={() => setTimeout(() => setShowResults(false), 150)}
             className="pl-10 h-9 text-sm"
-            style={{ background: '#fff', borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            style={{ background: 'var(--void)', borderColor: 'var(--rule-strong)', color: 'var(--ink)' }}
           />
         </div>
         <button onClick={() => runSearch(searchQuery)} disabled={isSearching} className="btn-solid px-4 h-9 inline-flex items-center gap-2">
@@ -163,7 +163,7 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({ onLocationSelect
               <button
                 key={index}
                 onMouseDown={() => handleSelectResult(result)}
-                className="w-full text-left p-3 rounded-sm transition-colors flex items-start gap-2 hover:bg-[rgba(21,23,27,0.05)]"
+                className="w-full text-left p-3 rounded-sm transition-colors flex items-start gap-2 hover:bg-[rgba(238,241,242,0.06)]"
               >
                 <MapPin className="size-4 mt-1 shrink-0 text-muted-foreground" />
                 <div className="flex-1 min-w-0">

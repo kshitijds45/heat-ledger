@@ -253,7 +253,7 @@ export default function App() {
           </button>
 
           <div className="flex items-center gap-3 min-w-0">
-            <span className="utility truncate hidden md:inline">{locationName}</span>
+            <span className="utility truncate hidden lg:inline">{locationName}</span>
             <div className="seg">
               <button data-active={!showMethod} onClick={backToTop}>Analysis</button>
               <button data-active={showMethod} onClick={() => setShowMethod(true)}>Method</button>
@@ -312,18 +312,18 @@ export default function App() {
             <div
               className="absolute bottom-0 left-0 right-0 z-[600] px-4 py-3 pointer-events-none"
               style={{
-                background: 'linear-gradient(to top, rgba(244,242,237,0.96) 0%, rgba(244,242,237,0) 100%)',
+                background: 'linear-gradient(to top, rgba(20,24,27,0.95) 0%, rgba(20,24,27,0) 100%)',
               }}
             >
-              <p className="utility">{locationName}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>
-                Index point {index.lat.toFixed(3)}, {index.lon.toFixed(3)} · {startYear} to {endYear}
+              <p className="text-xs font-medium truncate">{locationName}</p>
+              <p style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 2 }}>
+                Index {index.lat.toFixed(3)}, {index.lon.toFixed(3)} · {startYear}–{endYear}
               </p>
             </div>
 
             {!mapReady && (
-              <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--wash)' }}>
-                <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--heat-warm)' }} />
+              <div className="absolute inset-0 flex items-center justify-center z-[700]" style={{ background: 'var(--void)' }}>
+                <div className="size-6 rounded-full animate-spin" style={{ border: '1px solid var(--rule)', borderTopColor: 'var(--signal)' }} />
               </div>
             )}
           </div>
@@ -408,7 +408,7 @@ export default function App() {
                 startYear={startYear}
                 endYear={endYear}
               />
-              <footer className="mt-12 pt-5" style={{ borderTop: '1px solid var(--rule)' }}>
+              <footer className="mt-8 pt-4" style={{ borderTop: '1px solid var(--rule)' }}>
                 <p className="utility">{TOOL_NAME} · Built by {CREATOR}</p>
               </footer>
             </section>

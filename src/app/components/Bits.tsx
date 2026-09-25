@@ -6,30 +6,30 @@ export const SectionHead: React.FC<{
   standfirst?: React.ReactNode;
   aside?: React.ReactNode;
 }> = ({ index, title, standfirst, aside }) => (
-  <header>
-    <div className="flex items-start justify-between gap-6 flex-wrap">
-      <div className="min-w-0">
-        <p className="section-index"><span>{index}</span></p>
-        <h2 className="section-title">{title}</h2>
-      </div>
-      {aside && <div className="shrink-0 pt-1">{aside}</div>}
+  <header className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="min-w-0">
+      <p className="section-index">{index}</p>
+      <h2 className="section-title">{title}</h2>
+      {standfirst && <p className="section-standfirst">{standfirst}</p>}
     </div>
-    {standfirst && <p className="section-standfirst">{standfirst}</p>}
+    {aside && <div className="shrink-0">{aside}</div>}
   </header>
 );
 
-export const Figure: React.FC<{
-  label: string;
-  value: string;
-  note?: string;
-  accent?: string;
-}> = ({ label, value, note, accent }) => (
-  <div className="figure">
-    <p className="figure-label">{label}</p>
-    <p className="figure-value" style={accent ? { color: accent } : undefined}>
-      {value}
-    </p>
-    {note && <p className="figure-note">{note}</p>}
+/** A compact readout. Values are sized to be scanned, not admired. */
+export const Readout: React.FC<{
+  items: Array<{ label: string; value: string; note?: string; accent?: string }>;
+}> = ({ items }) => (
+  <div className="readout">
+    {items.map(i => (
+      <div key={i.label}>
+        <p className="readout-label" title={i.label}>{i.label}</p>
+        <p className="readout-value" style={i.accent ? { color: i.accent } : undefined}>
+          {i.value}
+        </p>
+        {i.note && <p className="readout-note">{i.note}</p>}
+      </div>
+    ))}
   </div>
 );
 
@@ -42,18 +42,11 @@ export const NumberField: React.FC<{
   max?: number;
   suffix?: string;
   prefix?: string;
-  hint?: string;
-}> = ({ label, value, onChange, step = 1, min, max, suffix, prefix, hint }) => (
+}> = ({ label, value, onChange, step = 1, min, max, suffix, prefix }) => (
   <label className="block">
-    <span className="utility block mb-2" style={{ fontSize: 9, letterSpacing: '0.14em' }}>
-      {label}
-    </span>
-    <div className="flex items-center gap-1">
-      {prefix && (
-        <span className="text-sm shrink-0" style={{ color: 'var(--muted)' }}>
-          {prefix}
-        </span>
-      )}
+    <span className="field-label">{label}</span>
+    <div className="flex items-center gap-1.5">
+      {prefix && <span className="text-xs shrink-0" style={{ color: 'var(--muted)' }}>{prefix}</span>}
       <input
         type="number"
         value={Number.isFinite(value) ? value : ''}
@@ -64,20 +57,47 @@ export const NumberField: React.FC<{
           const v = parseFloat(e.target.value);
           if (Number.isFinite(v)) onChange(v);
         }}
-        className="w-full text-sm px-2.5 py-2"
       />
-      {suffix && (
-        <span className="text-xs whitespace-nowrap shrink-0" style={{ color: 'var(--muted)' }}>
-          {suffix}
-        </span>
-      )}
+      {suffix && <span className="text-xs shrink-0 whitespace-nowrap" style={{ color: 'var(--muted)' }}>{suffix}</span>}
     </div>
-    {hint && (
-      <span className="text-xs block mt-1" style={{ color: 'var(--muted)' }}>
-        {hint}
-      </span>
-    )}
   </label>
+);
+
+/**
+ * A slider with its value shown as a readout, which is the control an
+ * underwriter reaches for when feeling out a threshold rather than
+ * committing to one.
+ */
+export const SliderField: React.FC<{
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  format?: (v: number) => string;
+  hint?: string;
+}> = ({ label, value, onChange, min, max, step = 1, format, hint }) => (
+  <div>
+    <div className="flex items-baseline justify-between gap-3 mb-1.5">
+      <span className="field-label" style={{ marginBottom: 0 }}>{label}</span>
+      <span className="text-sm font-semibold shrink-0">{format ? format(value) : value}</span>
+    </div>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={e => onChange(parseFloat(e.target.value))}
+      aria-label={label}
+    />
+    <div className="flex justify-between mt-1">
+      <span style={{ fontSize: 9.5, color: 'var(--muted)' }}>{format ? format(min) : min}</span>
+      {hint && <span style={{ fontSize: 9.5, color: 'var(--muted)' }}>{hint}</span>}
+      <span style={{ fontSize: 9.5, color: 'var(--muted)' }}>{format ? format(max) : max}</span>
+    </div>
+  </div>
 );
 
 export function Pills<T extends string>({
@@ -93,7 +113,7 @@ export function Pills<T extends string>({
 }) {
   return (
     <div>
-      {label && <p className="utility mb-3">{label}</p>}
+      {label && <span className="field-label">{label}</span>}
       <div className="pill-select">
         {options.map(([key, text]) => (
           <button
@@ -112,15 +132,27 @@ export function Pills<T extends string>({
 }
 
 export const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-xs leading-relaxed mt-4" style={{ color: 'var(--muted)', maxWidth: '76ch' }}>
+  <p className="text-xs leading-relaxed mt-3" style={{ color: 'var(--muted)' }}>
     {children}
   </p>
 );
 
 export const Empty: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="panel panel-pad">
-    <p className="text-sm" style={{ color: 'var(--muted)' }}>
-      {children}
-    </p>
+    <p className="text-xs" style={{ color: 'var(--muted)' }}>{children}</p>
+  </div>
+);
+
+export const PanelBlock: React.FC<{ head: string; children: React.ReactNode; aside?: React.ReactNode }> = ({
+  head,
+  children,
+  aside,
+}) => (
+  <div className="panel">
+    <div className="panel-head flex items-center justify-between gap-3">
+      <span>{head}</span>
+      {aside}
+    </div>
+    <div className="p-3.5">{children}</div>
   </div>
 );

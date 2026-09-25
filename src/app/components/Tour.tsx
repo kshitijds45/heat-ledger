@@ -6,21 +6,22 @@ const STORAGE_KEY = 'bellweather-tour-seen-v1';
 
 const STEPS = [
   {
-    title: `What ${TOOL_NAME} does`,
+    title: 'What this prices',
     body:
-      'It prices insurance that pays a fixed sum when a heatwave or a cold wave hits. No claim, no loss adjuster: the temperature either crossed the line or it did not. Because the payout is fixed by contract, the only real question is how often the trigger fires, and thirty five years of public weather data can answer that.',
+      'Parametric cover that pays a fixed sum when a temperature index crosses a defined line. No claim and no loss adjuster, so there is no damage to model. The only uncertainty is trigger frequency, and thirty five years of ECMWF reanalysis answers that for any location.',
   },
   {
-    title: 'It runs as a sequence',
+    title: 'How to use it',
     body:
-      'Start on the map and choose an area. Everything after that is one panel per stage: the product being sold, how often the trigger has fired, what it costs, how that changes by 2050, and what a whole book looks like. Use the numbered index at the top to jump between them, or return to the map at any point to price somewhere else.',
+      'Choose an area on the map, then work down the panels. Product sets the triggers, limits and pricing basis. Hazard shows observed and trend-adjusted frequency. Price gives the rate build-up, the 1-in-200 payout and return on capital. Portfolio scales it to a book. Every control recalculates instantly from the stored record.',
   },
   {
-    title: 'Then defend the numbers',
+    title: 'Before you rely on it',
     body:
-      'Every assumption is yours to change, and the last panel sweeps any one of them across a range so you can show why a threshold or a target was chosen rather than simply asserting it. The Method page carries every source, formula and limitation behind the figures.',
+      'Triggers default to the Met Office heatwave definition and the Cold Weather Payment rule; capital follows the Solvency UK 99.5% standard. Loadings are yours to set. Basis risk is unsolved and there is no named settlement source, so this is an analysis tool, not a quotation. Method sets out every source and limitation.',
   },
 ];
+
 
 
 export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
@@ -48,12 +49,12 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
   return (
     <div
       className="fixed inset-0 z-[3000] flex items-center justify-center p-4"
-      style={{ background: 'rgba(21, 23, 27, 0.55)', backdropFilter: 'blur(6px)' }}
+      style={{ background: 'rgba(12, 14, 16, 0.82)', backdropFilter: 'blur(6px)' }}
       role="dialog"
       aria-modal="true"
       aria-label={`${TOOL_NAME} walkthrough`}
     >
-      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 30px 80px rgba(21,23,27,0.28)' }}>
+      <div className="panel w-full max-w-lg relative" style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.6)' }}>
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-1.5 rounded-md"
@@ -65,11 +66,11 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
         <div className="p-6">
           {first && (
             <div className="mb-5 pb-4" style={{ borderBottom: '1px solid var(--rule)' }}>
-              <h1 style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 38, letterSpacing: '-0.02em', lineHeight: 1 }}>{TOOL_NAME}</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1 }}>{TOOL_NAME}</h1>
               <p className="text-xs mt-1.5" style={{ color: 'var(--muted)' }}>{TOOL_TAGLINE}</p>
             </div>
           )}
-          <h2 className="mb-2.5" style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 24, letterSpacing: '-0.015em' }}>{STEPS[step].title}</h2>
+          <h2 className="mb-2.5" style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.02em' }}>{STEPS[step].title}</h2>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{STEPS[step].body}</p>
 
           <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: '1px solid var(--rule)' }}>
@@ -83,7 +84,7 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
                     width: i === step ? 18 : 6,
                     height: 6,
                     borderRadius: 999,
-                    background: i === step ? 'var(--heat-warm)' : 'var(--rule-strong)',
+                    background: i === step ? 'var(--signal)' : 'var(--rule-strong)',
                     border: 0,
                     cursor: 'pointer',
                   }}
@@ -91,13 +92,13 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={onClose} className="utility px-3 py-1.5" style={{ color: 'var(--muted)', background: 'transparent', border: 0, cursor: 'pointer' }}>
+              <button onClick={onClose} className="btn-ghost" style={{ color: 'var(--muted)', background: 'transparent', border: 0, cursor: 'pointer' }}>
                 Skip
               </button>
               {!first && (
                 <button
                   onClick={() => setStep(s => s - 1)}
-                  className="btn-ghost px-3 py-2 inline-flex items-center gap-1"
+                  className="btn-ghost inline-flex items-center gap-1"
                   
                 >
                   <ArrowLeft className="size-3" /> Back
@@ -105,7 +106,7 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
               )}
               <button
                 onClick={() => (last ? onClose() : setStep(s => s + 1))}
-                className="btn-solid px-4 py-2.5 inline-flex items-center gap-1.5"
+                className="btn-solid inline-flex items-center gap-1.5"
                 
               >
                 {last ? 'Start' : 'Next'}
@@ -120,13 +121,9 @@ export const Tour: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
   );
 };
 
-export const hasSeenTour = (): boolean => {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-};
+// Shown on every load by design: this is a specialist tool and most visitors
+// arrive without context, so the orientation is worth repeating.
+export const hasSeenTour = (): boolean => false;
 
 export const markTourSeen = (): void => {
   try {

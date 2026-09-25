@@ -5,8 +5,8 @@ import { HISTORY_START, historyEnd, BASELINE, FUTURE, CLIMATE_MODELS, POPULATION
 
 const Section: React.FC<{ n: number; title: string; children: React.ReactNode }> = ({ n, title, children }) => (
   <section className="pt-8 mt-8" style={{ borderTop: '1px solid var(--rule)' }}>
-    <p className="utility mb-3">{String(n).padStart(2, '0')}</p>
-    <h3 className="mb-4" style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 'clamp(24px, 3vw, 36px)', letterSpacing: '-0.015em', lineHeight: 1.05 }}>
+    <p className="section-index mb-1.5">{String(n).padStart(2, '0')}</p>
+    <h3 className="mb-3" style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em' }}>
       {title}
     </h3>
     {children}
@@ -14,7 +14,7 @@ const Section: React.FC<{ n: number; title: string; children: React.ReactNode }>
 );
 
 const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--ink-soft)', maxWidth: '68ch' }}>
+  <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--ink-soft)', maxWidth: '78ch' }}>
     {children}
   </p>
 );
@@ -22,7 +22,7 @@ const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const F: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div
     className="text-xs tnum px-3 py-2 rounded-md my-3 leading-relaxed"
-    style={{ background: 'var(--void)', border: '1px solid var(--rule)', maxWidth: '68ch', color: 'var(--ink-soft)' }}
+    style={{ background: 'var(--void)', border: '1px solid var(--rule)', maxWidth: '78ch', color: 'var(--ink-soft)' }}
   >
     {children}
   </div>
@@ -33,9 +33,9 @@ const YEARS = historyEnd() - HISTORY_START + 1;
 
 export const Method: React.FC = () => (
   <div className="h-full overflow-y-auto p-5 md:p-10">
-    <div className="max-w-3xl mx-auto pb-24 pt-4">
-      <h2 style={{ fontFamily: 'var(--display)', fontWeight: 500, fontSize: 'clamp(38px, 6vw, 76px)', letterSpacing: '-0.02em', lineHeight: 1 }}>Method and fine print</h2>
-      <p className="text-sm mt-4" style={{ color: 'var(--ink-soft)', maxWidth: '62ch', lineHeight: 1.65 }}>
+    <div className="max-w-4xl pb-24 pt-2">
+      <h2 style={{ fontSize: 24, fontWeight: 600, letterSpacing: '-0.025em' }}>Method and fine print</h2>
+      <p className="text-sm mt-4" style={{ color: 'var(--muted)', maxWidth: '78ch', lineHeight: 1.6 }}>
         How {TOOL_NAME} prices heatwave and cold wave cover, where every number comes from and what it
         cannot tell you.
       </p>
@@ -267,7 +267,7 @@ export const Method: React.FC = () => (
       </Section>
 
       <Section n={11} title="What this cannot tell you">
-        <ul className="text-sm space-y-2" style={{ color: 'var(--ink-soft)', maxWidth: '68ch' }}>
+        <ul className="text-sm space-y-2" style={{ color: 'var(--ink-soft)', maxWidth: '78ch' }}>
           <li>
             <strong>Basis risk.</strong> The index is one grid point. A policyholder can suffer on a day the
             index misses, or be paid on a day they were fine. Every parametric product carries this, and it

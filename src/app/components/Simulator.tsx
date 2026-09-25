@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
-import { SectionHead, NumberField, Note, Empty } from './Bits';
+import { SectionHead, NumberField, Note, Empty, PanelBlock } from './Bits';
 import { Peril, pickPrice } from './Sections';
 import { Assumptions, analyse, pct } from '../services/RiskModel';
 import { DailySeries } from '../services/ClimateData';
@@ -134,10 +134,10 @@ export const SimulatorSection: React.FC<{
 
   return (
     <>
-      <div className="section-inner"><SectionHead
-        index="07 / Sensitivity"
-        title="Evidence for the choice"
-        standfirst="Pick one parameter, sweep it across a range, hold everything else still. This is how a pricing decision gets defended rather than asserted. Each row is a full recalculation across the whole temperature record, so moving a trigger genuinely re-counts every event."
+      <SectionHead
+        index="06 / Sensitivity"
+        title="Parameter sweep"
+        standfirst="One parameter swept across a range, everything else held. Each row is a full recalculation across the whole record, so moving a trigger re-counts every event rather than interpolating."
         aside={
           rows.length > 0 && (
             <button
@@ -150,12 +150,12 @@ export const SimulatorSection: React.FC<{
             </button>
           )
         }
-      /></div>
+      />
 
-      <div className="section-body section-inner">
-        <div className="panel panel-pad mb-5">
-          <p className="utility mb-3">Parameter to sweep</p>
-          <div className="pill-select mb-4">
+      <div className="section-body">
+        <div className="panel panel-pad mb-3">
+          <p className="field-label">Parameter to sweep</p>
+          <div className="pill-select mb-4 flex-wrap">
             {SPECS.filter(s => {
               if (s.key === 'heatThreshold' && peril === 'cold') return false;
               if (s.key === 'coldThreshold' && peril === 'heat') return false;
@@ -171,7 +171,7 @@ export const SimulatorSection: React.FC<{
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-3 max-w-md">
+          <div className="grid grid-cols-3 gap-3 max-w-sm">
             <NumberField label="From" value={from} onChange={setFrom} step={spec.step} />
             <NumberField label="To" value={to} onChange={setTo} step={spec.step} />
             <NumberField label="Step" value={step} onChange={v => setStep(Math.abs(v) || spec.step)} step={spec.step} min={0.01} />
@@ -206,7 +206,7 @@ export const SimulatorSection: React.FC<{
                         ? money(r.display, currency, 0)
                         : fmtParam(r.display)}
                       {r.current && (
-                        <span className="chip ml-2" style={{ fontSize: 10 }}>current</span>
+                        <span className="chip ml-2">current</span>
                       )}
                     </td>
                     <td>{r.price.eventsPerYear.toFixed(2)}</td>
@@ -222,10 +222,9 @@ export const SimulatorSection: React.FC<{
               </tbody>
             </table>
             <Note>
-              Holding everything else constant is the whole point and also the limitation. Real
-              decisions move several parameters at once, and this cannot show the interactions between
-              them. A dash means no qualifying event at that setting, which is a finding in itself:
-              it marks where the trigger stops being insurable from this record.
+              One at a time is the method and the limitation: real decisions move several parameters
+              together and this cannot show the interactions. A dash marks where the trigger stops
+              being insurable from this record.
             </Note>
           </div>
         )}
